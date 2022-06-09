@@ -1,6 +1,1 @@
-rasdaemon-env-defaults.patch
-mv-manpage.patch
-systemd-targets.patch
-add-man-options.patch
-systemd-requires.patch
 ras-mc-ctl.patch
