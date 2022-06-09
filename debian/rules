@@ -1,0 +1,21 @@
+#!/usr/bin/make -f
+#export DH_VERBOSE = 1
+
+DPKG_EXPORT_BUILDFLAGS = 1
+include /usr/share/dpkg/default.mk
+
+%:
+	dh $@ --with autoreconf
+
+# removed --enable-arm as it is experimental and does not compile
+override_dh_auto_configure:
+	dh_auto_configure -- \
+	--enable-mce --enable-aer --enable-sqlite3 --enable-extlog \
+	--enable-abrt-report \
+	--with-sysconfdefdir=/etc/default
+
+override_dh_install:
+	dh_install
+	dh_installsystemd --name=rasdaemon rasdaemon.service
+	dh_installsystemd --name=ras-mc-ctl ras-mc-ctl.service
+	rm -rf $(CURDIR)/debian/rasdaemon/usr/include

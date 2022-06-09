@@ -1,0 +1,131 @@
+rasdaemon (0.6.7-1) unstable; urgency=medium
+
+  * New upstream
+  * ras-mc-ctl-PCIe-AER-display-PCIe-dev-name.patch is upstream
+  * Most of rasdaemon-env-defaults.patch is upstream
+  * Taking over the package
+  * Closes: #973053
+
+ -- Russell Coker <russell@coker.com.au>  Thu, 17 Feb 2022 13:22:05 +1100
+
+rasdaemon (0.6.6-3) unstable; urgency=medium
+
+  * Orphaning the package. 
+
+ -- Al Stone <ahs3@debian.org>  Sun, 21 Mar 2021 13:52:40 -0600
+
+rasdaemon (0.6.6-2) unstable; urgency=medium
+
+  * Include merge request to fix systemctl start up.  Closes: #966698 
+  * Fix lintian error: no build-depend for dh-exec
+
+ -- Al Stone <ahs3@debian.org>  Mon, 07 Sep 2020 21:04:23 -0600
+
+rasdaemon (0.6.6-1) unstable; urgency=medium
+
+  * Update to 0.6.6 upstream source 
+  * Clean up existing patches, removing those already applied
+  * Includes upstream fix to allow compilation with GCC-10.  Closes: #957750
+  * Add post-0.6.6 patch from upstream to display PCIe device name from PCIe
+    AER.  Closes: #965962
+
+ -- Al Stone <ahs3@debian.org>  Mon, 27 Jul 2020 20:22:56 -0600
+
+rasdaemon (0.6.5-2) unstable; urgency=medium
+
+  [ dann frazier ]
+  * Use CPU feature flag instead of family to detect AMD SMCA support.
+  * Add support for new AMD SMCA bank types.  Closes: #956919
+  * Cleanup /var/lib/rasdaemon/ras-mc_event.db on purge.  Closes: #956329
+  * debian/control: Correct case of Vcs-Git field.
+
+  [ Al Stone ]
+  * Thanks to dannf for all the patches; all incorporated now.
+  * Update debhelper compat version 
+  * Fix uninitialized variable in ras-mc-ctl; used modified version of
+    the original patch. Closes: #958511 
+
+ -- Al Stone <ahs3@debian.org>  Fri, 21 Feb 2020 18:09:55 -0700
+
+rasdaemon (0.6.5-1) unstable; urgency=medium
+
+  * Update to latest upstream
+  * Update Standard version to 4.5.0
+  * Home page is the proper upstream now.  Closes: #916470 -- tested by
+    going to the sid package page.
+  * Remove hard dependency on systemd.  Closes: #947350
+
+ -- Al Stone <ahs3@debian.org>  Fri, 21 Feb 2020 18:09:55 -0700
+
+rasdaemon (0.6.4-2) unstable; urgency=medium
+
+  * Corrected the home page in the control file; previous attempt
+    had a cut'n'paste error.  Closes: #916740 properly this time.
+  * Changed VCS-git to point at salsa.debian.org as a more reliable
+    location for the Debian packaging.
+
+ -- Al Stone <ahs3@debian.org>  Thu, 24 Oct 2019 12:13:45 -0600
+
+rasdaemon (0.6.4-1) unstable; urgency=medium
+
+  * Update to latest upstream.
+  * Update Standards version to 4.4.1
+  * Incorporate all the NMU work (thanks!)
+  * Closes: #890497 -- NMU for systemd and autoreconf cleanup
+  * Closes: #889487 -- add an init script for SysV init systems
+  * Closes: #942405 -- release 0.6.4 is out, please update
+  * Closes: #906961 -- add man options not documented for ras-mc-ctl
+  * Closes: #916470 -- corrected project homepage
+  * Closes: #933910 -- add patch to preclude rasdaemon.service from
+    sometimes terminating at boot
+
+ -- Al Stone <ahs3@debian.org>  Tue, 22 Oct 2019 15:19:32 -0600
+
+rasdaemon (0.6.0-1.2) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Closes: #896432 -- debian/rules: Add support for ARM events
+    (--enable-arm).
+
+ -- dann frazier <dannf@debian.org>  Wed, 09 May 2018 08:46:47 -0600
+
+rasdaemon (0.6.0-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * debian/control: Add ${perl:Depends} to the Depends field
+  * debian/rules:
+    - Cleanup comments added by dh_make, that should fix the lintian error.
+    - Stop overriding dh_installdeb to call dh_system_start/dh_systemd_enable,
+      use "--with systemd" instead
+    - Stop calling autoreconf manually, use "--with autoreconf" instead
+
+ -- Laurent Bigonville <bigon@debian.org>  Thu, 15 Feb 2018 11:15:00 +0100
+
+rasdaemon (0.6.0-1) unstable; urgency=medium
+
+  * Closes: #879632 -- Update to 0.6.0 upstream.
+  * Update watch file to point to relocated upstream.
+  * Refresh patches to remove already accepted changes.
+  * Closes: #869697 -- add dependency on libdbd-sqlite3-perl
+
+ -- Al Stone <ahs3@debian.org>  Mon, 27 Nov 2017 18:33:18 -0700
+
+rasdaemon (0.5.8-1) unstable; urgency=medium
+
+  * Update to 0.5.8 upstream.
+
+ -- Al Stone <ahs3@debian.org>  Sat, 25 Jun 2016 16:06:25 -0600
+
+rasdaemon (0.5.6-2) unstable; urgency=medium
+
+  * Closes: #806412 -- add in build-depends on dh-autoreconf
+  * Closes: #806231 -- add in build-depends on autoconf
+  * Test properly with pbuilder this time
+
+ -- ahs3 <ahs3@debian.org>  Mon, 07 Dec 2015 19:22:01 -0700
+
+rasdaemon (0.5.6-1) unstable; urgency=low
+
+  * Initial release (Closes: #799015)
+
+ -- Al Stone <ahs3@debian.org>  Fri, 04 Sep 2015 16:22:59 -0600

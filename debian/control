@@ -1,0 +1,24 @@
+Source: rasdaemon
+Section: admin
+Priority: optional
+Maintainer: Russell Coker <russell@coker.com.au>
+Build-Depends: debhelper (>= 12), quilt, libsqlite3-dev, libgettextpo-dev,
+ autoconf, dh-exec
+Standards-Version: 4.5.0
+Homepage: https://github.com/mchehab/rasdaemon
+Vcs-Git: https://salsa.debian.org/ahs3/rasdaemon
+
+Package: rasdaemon
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}, sqlite3,
+ libdbd-sqlite3-perl
+Description: utility to receive RAS error tracings
+ rasdaemon is a RAS (Reliability, Availability and Serviceability) logging
+ tool.  It currently records memory errors, using the EDAC tracing events.
+ EDAC are drivers in the Linux kernel that handle detection of ECC errors
+ from memory controllers for most chipsets on x86 and ARM architectures.
+ This userspace component consists of an init script which makes sure EDAC
+ drivers and DIMM labels are loaded at system startup, as well as a utility
+ for reporting current error counts from the EDAC sysfs files.
+ 
