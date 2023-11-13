@@ -1,7 +1,7 @@
 Source: rasdaemon
 Section: admin
 Priority: optional
-Maintainer: Taihsiang Ho <e@tai271828.me>
+Maintainer: Taihsiang Ho (tai271828) <e@tai271828.me>
 Uploaders: Russell Coker <russell@coker.com.au>
 Build-Depends: debhelper (>= 12), quilt, dh-exec,
                autoconf,
