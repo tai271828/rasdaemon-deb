@@ -1,8 +1,8 @@
 Source: rasdaemon
 Section: admin
 Priority: optional
-Maintainer: Russell Coker <russell@coker.com.au>
-Uploaders: Taihsiang Ho <e@tai271828.me>
+Maintainer: Taihsiang Ho <e@tai271828.me>
+Uploaders: Russell Coker <russell@coker.com.au>
 Build-Depends: debhelper (>= 12), quilt, libsqlite3-dev, libgettextpo-dev,
  autoconf, dh-exec
 Standards-Version: 4.5.0
