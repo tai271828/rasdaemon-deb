@@ -14,9 +14,11 @@ BuildRequires:		gettext-devel
 BuildRequires:		perl-generators
 BuildRequires:		sqlite-devel
 BuildRequires:		systemd
+BuildRequires:		libtraceevent-devel
 Provides:		bundled(kernel-event-lib)
 Requires:		hwdata
 Requires:		perl-DBD-SQLite
+Requires:		libtraceevent
 %ifarch %{ix86} x86_64
 Requires:		dmidecode
 %endif
@@ -51,7 +53,7 @@ install -D -p -m 0655 misc/rasdaemon.env %{buildroot}%{_sysconfdir}/sysconfig/%{
 rm INSTALL %{buildroot}/usr/include/*.h
 
 %files
-%doc AUTHORS ChangeLog COPYING README TODO
+%doc AUTHORS ChangeLog COPYING README.md TODO
 %{_sbindir}/rasdaemon
 %{_sbindir}/ras-mc-ctl
 %{_mandir}/*/*

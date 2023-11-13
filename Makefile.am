@@ -1,5 +1,6 @@
+AM_DISTCHECK_CONFIGURE_FLAGS = --enable-all
 ACLOCAL_AMFLAGS=-I m4
-SUBDIRS = libtrace util man
+SUBDIRS = util man
 SYSTEMD_SERVICES_IN = misc/rasdaemon.service.in misc/ras-mc-ctl.service.in
 SYSTEMD_SERVICES = $(SYSTEMD_SERVICES_IN:.service.in=.service)
 EXTRA_DIST = $(SYSTEMD_SERVICES_IN) misc/rasdaemon.env
@@ -69,13 +70,18 @@ endif
 if WITH_AMP_NS_DECODE
    rasdaemon_SOURCES += non-standard-ampere.c
 endif
-rasdaemon_LDADD = -lpthread $(SQLITE3_LIBS) libtrace/libtrace.a
+if WITH_CPU_FAULT_ISOLATION
+   rasdaemon_SOURCES += ras-cpu-isolation.c queue.c
+endif
+rasdaemon_LDADD = -lpthread $(SQLITE3_LIBS) $(LIBTRACEEVENT_LIBS)
+rasdaemon_CFLAGS = $(SQLITE3_CFLAGS) $(LIBTRACEEVENT_CFLAGS)
 
 include_HEADERS = config.h  ras-events.h  ras-logger.h  ras-mc-handler.h \
 		  ras-aer-handler.h ras-mce-handler.h ras-record.h bitfield.h ras-report.h \
 		  ras-extlog-handler.h ras-arm-handler.h ras-non-standard-handler.h \
 		  ras-devlink-handler.h ras-diskerror-handler.h rbtree.h ras-page-isolation.h \
-		  non-standard-hisilicon.h non-standard-ampere.h ras-memory-failure-handler.h
+		  non-standard-hisilicon.h non-standard-ampere.h ras-memory-failure-handler.h \
+		  ras-cpu-isolation.h queue.h
 
 # This rule can't be called with more than one Makefile job (like make -j8)
 # I can't figure out a way to fix that
@@ -91,7 +97,7 @@ srpm: dist-bzip2
 	rpmbuild -bs misc/@PACKAGE@.spec
 
 mock: srpm
-	mock `rpm --eval %{_topdir}`/SRPMS/@PACKAGE@-@PACKAGE_VERSION@*.src.rpm
+	mock --resultdir="./SRPMS" `rpm --eval %{_topdir}`/SRPMS/@PACKAGE@-@PACKAGE_VERSION@*.src.rpm
 
 rpmlint:
 	rpmlint misc/@PACKAGE@.spec `rpm --eval %{_topdir}`/SRPMS/@PACKAGE@-@PACKAGE_VERSION@*.src.rpm `rpm --eval %{_topdir}`/RPMS/*/@PACKAGE@-@PACKAGE_VERSION@*.rpm
