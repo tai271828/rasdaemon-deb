@@ -35,9 +35,9 @@ use File::Find;
 use Getopt::Long;
 use POSIX;
 
-my $dbname      = "@RASSTATEDIR@/@RAS_DB_FNAME@";
-my $prefix      = "@prefix@";
-my $sysconfdir  = "@sysconfdir@";
+my $dbname      = "/usr/local/var/lib/rasdaemon/ras-mc_event.db";
+my $prefix      = "/usr/local";
+my $sysconfdir  = "/etc";
 my $dmidecode   = find_prog ("dmidecode");
 my $modprobe    = find_prog ("modprobe")  or exit (1);
 
@@ -49,13 +49,13 @@ my $has_extlog = 0;
 my $has_mem_failure = 0;
 my $has_mce = 0;
 
-@WITH_AER_TRUE@$has_aer = 1;
-@WITH_ARM_TRUE@$has_arm = 1;
-@WITH_DEVLINK_TRUE@$has_devlink = 1;
-@WITH_DISKERROR_TRUE@$has_disk_errors = 1;
-@WITH_EXTLOG_TRUE@$has_extlog = 1;
-@WITH_MEMORY_FAILURE_TRUE@$has_mem_failure = 1;
-@WITH_MCE_TRUE@$has_mce = 1;
+$has_aer = 1;
+$has_arm = 1;
+$has_devlink = 1;
+$has_disk_errors = 1;
+$has_extlog = 1;
+$has_mem_failure = 1;
+$has_mce = 1;
 
 my %conf        = ();
 my %bus         = ();
