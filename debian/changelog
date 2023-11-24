@@ -1,3 +1,14 @@
+rasdaemon (0.8.0-1) unstable; urgency=medium
+
+  * debian: add gbp.conf
+  * d/control: apply correct Maintainer and Uploaders context
+  * d/control: new dep libtraceevent-dev
+  * d/control: unify the maintainer info
+  * d/docs: update README.md name
+  * d/tests: init autopkgtest test cases
+
+ -- Taihsiang Ho (tai271828) <e@tai271828.me>  Fri, 24 Nov 2023 17:02:40 +0100
+
 rasdaemon (0.6.8-1.1) unstable; urgency=medium
 
   * Non-maintainer upload, on the behalf of the release team, making sure
