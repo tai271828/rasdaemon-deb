@@ -1,4 +1,40 @@
-2021-05-26	Mauro Carvalho Chehab <mchehab@kernel.org>
+2023-02-18      Mauro Carvalho Chehab <mchehab@kernel.org>
+	- Version 0.8.0
+
+	* This version now uses libtraceevent. Since its beginning,
+	  rasdaemon came with an early version of this library. Now,
+	  instead of keeping it embedded, use it from the system's
+	  package.
+	* Fix mock build target and rasdaemon.spec.in
+	* Update README with instructions about contributing and
+	  convert to markdown
+	* Fix a regression with Kernel 6.1-rc6
+	* make distcheck now works
+	* Add labels for ASRockRack model X399D8A-2T
+
+2023-01-21	Mauro Carvalho Chehab <mchehab@kernel.org>
+	- Version 0.7.0
+
+	* Add labels for ASUS TUF GAMING B450-PLUS II
+	* Add four modules supported by HiSilicon common section
+	* Updated HiSilicon platform name
+	* Relocate reading and display Kunpeng920 errors to under Kunpeng9xx
+	* Add support to display the HiSilicon vendor errors for a specified module
+	* Add printing usage if necessary parameters are not passed for the vendor-error options
+	* Reformat error info of the HiSilicon Kunpeng920
+	* Modify error statistics for HiSilicon KunPeng9xx common errors
+	* Modify recording Hisilicon common error data
+	* Support cpu fault isolation for recoverable errors
+	* Support cpu fault isolation for corrected errors
+	* Use XSI version of strerror_r on non glibc systems
+	* Use the new block_rq_error tracepoint
+	* Fix bank limit types check
+	* Properly handle localtime() failure
+	* Fix for a memory out-of-bounds issue and optimized code to remove duplicate function.
+	* Fix possible but unlikely file descriptor leak
+	* Fix bashisms
+
+2022-04-12	Mauro Carvalho Chehab <mchehab@kernel.org>
 	- Version 0.6.8
 
 	* Fix some issues related to sysconfigdir

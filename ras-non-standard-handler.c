@@ -16,7 +16,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
-#include "libtrace/kbuffer.h"
+#include <traceevent/kbuffer.h>
 #include "ras-non-standard-handler.h"
 #include "ras-record.h"
 #include "ras-logger.h"
@@ -52,20 +52,6 @@ static char *uuid_le(const char *uu)
 	return uuid;
 }
 
-static int uuid_le_cmp(const char *sec_type, const char *uuid2)
-{
-	static char uuid1[32];
-	char *p = uuid1;
-	int i;
-	static const unsigned char le[16] = {
-			3, 2, 1, 0, 5, 4, 7, 6, 8, 9, 10, 11, 12, 13, 14, 15};
-
-	for (i = 0; i < 16; i++)
-		p += sprintf(p, "%.2x", (unsigned char) sec_type[le[i]]);
-	*p = 0;
-	return strncmp(uuid1, uuid2, 32);
-}
-
 int register_ns_ev_decoder(struct ras_ns_ev_decoder *ns_ev_decoder)
 {
 	struct ras_ns_ev_decoder *list;
@@ -96,7 +82,7 @@ static int find_ns_ev_decoder(const char *sec_type, struct ras_ns_ev_decoder **p
 
 	ns_ev_decoder = ras_ns_ev_dec_list;
 	while (ns_ev_decoder) {
-		if (uuid_le_cmp(sec_type, ns_ev_decoder->sec_type) == 0) {
+		if (strcmp(uuid_le(sec_type), ns_ev_decoder->sec_type) == 0) {
 			*p_ns_ev_dec = ns_ev_decoder;
 			match  = 1;
 			break;
@@ -127,8 +113,8 @@ static void unregister_ns_ev_decoder(void)
 }
 
 int ras_non_standard_event_handler(struct trace_seq *s,
-			 struct pevent_record *record,
-			 struct event_format *event, void *context)
+				   struct tep_record *record,
+				   struct tep_event *event, void *context)
 {
 	int len, i, line_count;
 	unsigned long long val;
@@ -158,7 +144,7 @@ int ras_non_standard_event_handler(struct trace_seq *s,
 			 "%Y-%m-%d %H:%M:%S %z", tm);
 	trace_seq_printf(s, "%s ", ev.timestamp);
 
-	if (pevent_get_field_val(s, event, "sev", record, &val, 1) < 0)
+	if (tep_get_field_val(s, event, "sev", record, &val, 1) < 0)
 		return -1;
 	switch (val) {
 	case GHES_SEV_NO:
@@ -176,8 +162,8 @@ int ras_non_standard_event_handler(struct trace_seq *s,
 	}
 	trace_seq_printf(s, "\n %s", ev.severity);
 
-	ev.sec_type = pevent_get_field_raw(s, event, "sec_type",
-					   record, &len, 1);
+	ev.sec_type = tep_get_field_raw(s, event, "sec_type",
+					record, &len, 1);
 	if(!ev.sec_type)
 		return -1;
 	if (strcmp(uuid_le(ev.sec_type),
@@ -187,20 +173,19 @@ int ras_non_standard_event_handler(struct trace_seq *s,
 	else
 		trace_seq_printf(s, "\n section type: %s",
 				 uuid_le(ev.sec_type));
-	ev.fru_text = pevent_get_field_raw(s, event, "fru_text",
-						record, &len, 1);
-	ev.fru_id = pevent_get_field_raw(s, event, "fru_id",
-						record, &len, 1);
+	ev.fru_text = tep_get_field_raw(s, event, "fru_text",
+					record, &len, 1);
+	ev.fru_id = tep_get_field_raw(s, event, "fru_id",
+				      record, &len, 1);
 	trace_seq_printf(s, " fru text: %s fru id: %s ",
-				ev.fru_text,
-				uuid_le(ev.fru_id));
+			 ev.fru_text, uuid_le(ev.fru_id));
 
-	if (pevent_get_field_val(s, event, "len", record, &val, 1) < 0)
+	if (tep_get_field_val(s, event, "len", record, &val, 1) < 0)
 		return -1;
 	ev.length = val;
 	trace_seq_printf(s, "\n length: %d\n", ev.length);
 
-	ev.error = pevent_get_field_raw(s, event, "buf", record, &len, 1);
+	ev.error = tep_get_field_raw(s, event, "buf", record, &len, 1);
 	if(!ev.error)
 		return -1;
 

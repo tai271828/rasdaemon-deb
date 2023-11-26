@@ -1,10 +1,33 @@
+rasdaemon (0.8.0-1) unstable; urgency=medium
+
+  * debian: add gbp.conf
+  * d/control: apply correct Maintainer and Uploaders context
+  * d/control: new dep libtraceevent-dev
+  * d/control: unify the maintainer info
+  * d/docs: update README.md name
+  * d/tests: init autopkgtest test cases
+
+ -- Taihsiang Ho (tai271828) <e@tai271828.me>  Fri, 24 Nov 2023 17:02:40 +0100
+
+rasdaemon (0.6.8-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload, on the behalf of the release team, making sure
+    we don't discover breakages when preparing the Bookworm release. 
+  * Fix too-many-contacts lintian error: the Maintainer field is not
+    multi-valued, so keep the first developer in Maintainer and move the
+    second one to Uploaders (Closes: #1036959).
+
+ -- Cyril Brulebois <kibi@debian.org>  Fri, 02 Jun 2023 22:12:50 +0200
+
 rasdaemon (0.6.8-1) unstable; urgency=medium
 
   * Remove the patch in the upstream
   * d/control: update info and fix typo
   * Closes: #985678
+  * New upstream version that fixes some bugs and adds hardware support.
+  * Thanks Taihsiang Ho (tai271828) <e@tai271828.me> for preparing this update.
 
- -- Taihsiang Ho (tai271828) <e@tai271828.me>  Thu, 09 Jun 2022 20:01:05 +0200
+ -- Russell Coker <russell@coker.com.au>  Mon, 06 Feb 2023 18:24:59 +1100
 
 rasdaemon (0.6.7-1) unstable; urgency=medium
 

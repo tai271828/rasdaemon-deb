@@ -28,8 +28,9 @@
 #include <sys/poll.h>
 #include <signal.h>
 #include <sys/signalfd.h>
-#include "libtrace/kbuffer.h"
-#include "libtrace/event-parse.h"
+#include <linux/version.h>
+#include <traceevent/kbuffer.h>
+#include <traceevent/event-parse.h>
 #include "ras-mc-handler.h"
 #include "ras-aer-handler.h"
 #include "ras-non-standard-handler.h"
@@ -42,6 +43,7 @@
 #include "ras-record.h"
 #include "ras-logger.h"
 #include "ras-page-isolation.h"
+#include "ras-cpu-isolation.h"
 
 /*
  * Polling time, if read() doesn't block. Currently, trace_pipe_raw never
@@ -230,7 +232,11 @@ int toggle_ras_mc_event(int enable)
 #endif
 
 #ifdef HAVE_DISKERROR
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,18,0)
+	rc |= __toggle_ras_mc_event(ras, "block", "block_rq_error", enable);
+#else
 	rc |= __toggle_ras_mc_event(ras, "block", "block_rq_complete", enable);
+#endif
 #endif
 
 #ifdef HAVE_MEMORY_FAILURE
@@ -242,6 +248,7 @@ free_ras:
 	return rc;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,18,0)
 /*
  * Set kernel filter. libtrace doesn't provide an API for setting filters
  * in kernel, we have to implement it here.
@@ -273,12 +280,13 @@ static int filter_ras_mc_event(struct ras_events *ras, char *group, char *event,
 
 	return 0;
 }
+#endif
 
 /*
  * Tracing read code
  */
 
-static int get_pagesize(struct ras_events *ras, struct pevent *pevent)
+static int get_pagesize(struct ras_events *ras, struct tep_handle *pevent)
 {
 	int fd, len, page_size = 4096;
 	char buf[page_size];
@@ -290,10 +298,8 @@ static int get_pagesize(struct ras_events *ras, struct pevent *pevent)
 	len = read(fd, buf, page_size);
 	if (len <= 0)
 		goto error;
-	if (pevent_parse_header_page(pevent, buf, len, sizeof(long)))
+	if (tep_parse_header_page(pevent, buf, len, sizeof(long)))
 		goto error;
-
-	page_size = pevent->header_page_data_offset + pevent->header_page_data_size;
 
 error:
 	close(fd);
@@ -304,7 +310,7 @@ error:
 static void parse_ras_data(struct pthread_data *pdata, struct kbuffer *kbuf,
 			   void *data, unsigned long long time_stamp)
 {
-	struct pevent_record record;
+	struct tep_record record;
 	struct trace_seq s;
 
 	record.ts = time_stamp;
@@ -319,7 +325,11 @@ static void parse_ras_data(struct pthread_data *pdata, struct kbuffer *kbuf,
 
 	/* TODO - logging */
 	trace_seq_init(&s);
-	pevent_print_event(pdata->ras->pevent, &s, &record);
+	tep_print_event(pdata->ras->pevent, &s, &record,
+			"%16s-%-5d [%03d] %s %6.1000d %s %s",
+                        TEP_PRINT_COMM, TEP_PRINT_PID, TEP_PRINT_CPU,
+                        TEP_PRINT_LATENCY, TEP_PRINT_TIME, TEP_PRINT_NAME,
+                        TEP_PRINT_INFO);
 	trace_seq_do_printf(&s);
 	printf("\n");
 	fflush(stdout);
@@ -366,6 +376,8 @@ static int read_ras_event_all_cpus(struct pthread_data *pdata,
 	int warnonce[n_cpus];
 	char pipe_raw[PATH_MAX];
 	int legacy_kernel = 0;
+	int fd;
+	char buf[16];
 #if 0
 	int need_sleep = 0;
 #endif
@@ -384,6 +396,26 @@ static int read_ras_event_all_cpus(struct pthread_data *pdata,
 		free(page);
 		return -ENOMEM;
 	}
+
+	/* Fix for poll() on the per_cpu trace_pipe and trace_pipe_raw blocks
+	 * indefinitely with the default buffer_percent in the kernel trace system,
+	 * which is introduced by the following change in the kernel.
+	 * https://lore.kernel.org/all/20221020231427.41be3f26@gandalf.local.home/T/#u.
+	 * Set buffer_percent to 0 so that poll() will return immediately
+	 * when the trace data is available in the ras per_cpu trace pipe_raw
+	 */
+	fd = open_trace(pdata[0].ras, "buffer_percent", O_WRONLY);
+	if (fd >= 0) {
+		/* For the backward compatibility to the old kernels, do not return
+		 * if fail to set the buffer_percent.
+		 */
+		snprintf(buf, sizeof(buf), "0");
+		size = write(fd, buf, strlen(buf));
+		if (size <= 0)
+			log(TERM, LOG_WARNING, "can't write to buffer_percent\n");
+		close(fd);
+	} else
+		log(TERM, LOG_WARNING, "Can't open buffer_percent\n");
 
 	for (i = 0; i < (n_cpus + 1); i++)
 		fds[i].fd = -1;
@@ -680,13 +712,13 @@ static int select_tracing_timestamp(struct ras_events *ras)
 	return 0;
 }
 
-static int add_event_handler(struct ras_events *ras, struct pevent *pevent,
+static int add_event_handler(struct ras_events *ras, struct tep_handle *pevent,
 			     unsigned page_size, char *group, char *event,
-			     pevent_event_handler_func func, char *filter_str, int id)
+			     tep_event_handler_func func, char *filter_str, int id)
 {
 	int fd, size, rc;
 	char *page, fname[MAX_PATH + 1];
-	struct event_filter * filter = NULL;
+	struct tep_event_filter * filter = NULL;
 
 	snprintf(fname, sizeof(fname), "events/%s/%s/format", group, event);
 
@@ -716,15 +748,15 @@ static int add_event_handler(struct ras_events *ras, struct pevent *pevent,
 	}
 
 	/* Registers the special event handlers */
-	rc = pevent_register_event_handler(pevent, -1, group, event, func, ras);
-	if (rc == PEVENT_ERRNO__MEM_ALLOC_FAILED) {
+	rc = tep_register_event_handler(pevent, -1, group, event, func, ras);
+	if (rc == TEP_ERRNO__MEM_ALLOC_FAILED) {
 		log(TERM, LOG_ERR, "Can't register event handler for %s:%s\n",
 		    group, event);
 		free(page);
 		return EINVAL;
 	}
 
-	rc = pevent_parse_event(pevent, page, size, group);
+	rc = tep_parse_event(pevent, page, size, group);
 	if (rc) {
 		log(TERM, LOG_ERR, "Can't parse event %s:%s\n", group, event);
 		free(page);
@@ -732,20 +764,21 @@ static int add_event_handler(struct ras_events *ras, struct pevent *pevent,
 	}
 
 	if (filter_str) {
-		char *error;
+		char error[255];
 
-		filter = pevent_filter_alloc(pevent);
+		filter = tep_filter_alloc(pevent);
 		if (!filter) {
 			log(TERM, LOG_ERR,
 			    "Failed to allocate filter for %s/%s.\n", group, event);
 			free(page);
 			return EINVAL;
 		}
-		rc = pevent_filter_add_filter_str(filter, filter_str, &error);
-		if (rc) {
+		rc = tep_filter_add_filter_str(filter, filter_str);
+		if (rc < 0) {
+			tep_filter_strerror(filter, rc, error, sizeof(error));
 			log(TERM, LOG_ERR,
 			    "Failed to install filter for %s/%s: %s\n", group, event, error);
-			pevent_filter_free(filter);
+			tep_filter_free(filter);
 			free(page);
 			return rc;
 		}
@@ -773,7 +806,7 @@ int handle_ras_events(int record_events)
 	int rc, page_size, i;
 	int num_events = 0;
 	unsigned cpus;
-	struct pevent *pevent = NULL;
+	struct tep_handle *pevent = NULL;
 	struct pthread_data *data = NULL;
 	struct ras_events *ras = NULL;
 #ifdef HAVE_DEVLINK
@@ -798,7 +831,7 @@ int handle_ras_events(int record_events)
 		goto err;
 	}
 
-	pevent = pevent_alloc();
+	pevent = tep_alloc();
 	if (!pevent) {
 		log(TERM, LOG_ERR, "Can't allocate pevent\n");
 		rc = errno;
@@ -856,6 +889,10 @@ int handle_ras_events(int record_events)
 
 	cpus = get_num_cpus(ras);
 
+#ifdef HAVE_CPU_FAULT_ISOLATION
+	ras_cpu_isolation_init(cpus);
+#endif
+
 #ifdef HAVE_MCE
 	rc = register_mce_handler(ras, cpus);
 	if (rc)
@@ -902,6 +939,16 @@ int handle_ras_events(int record_events)
 #endif
 
 #ifdef HAVE_DISKERROR
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,18,0)
+	rc = add_event_handler(ras, pevent, page_size, "block",
+			       "block_rq_error", ras_diskerror_event_handler,
+				NULL, DISKERROR_EVENT);
+	if (!rc)
+		num_events++;
+	else
+		log(ALL, LOG_ERR, "Can't get traces from %s:%s\n",
+		    "block", "block_rq_error");
+#else
 	rc = filter_ras_mc_event(ras, "block", "block_rq_complete", "error != 0");
 	if (!rc) {
 		rc = add_event_handler(ras, pevent, page_size, "block",
@@ -913,6 +960,7 @@ int handle_ras_events(int record_events)
 			log(ALL, LOG_ERR, "Can't get traces from %s:%s\n",
 			    "block", "block_rq_complete");
 	}
+#endif
 #endif
 
 #ifdef HAVE_MEMORY_FAILURE
@@ -973,15 +1021,17 @@ err:
 		free(data);
 
 	if (pevent)
-		pevent_free(pevent);
+		tep_free(pevent);
 
 	if (ras) {
 		for (i = 0; i < NR_EVENTS; i++) {
 			if (ras->filters[i])
-				pevent_filter_free(ras->filters[i]);
+				tep_filter_free(ras->filters[i]);
 		}
 		free(ras);
 	}
-
+#ifdef HAVE_CPU_FAULT_ISOLATION
+	cpu_infos_free();
+#endif
 	return rc;
 }

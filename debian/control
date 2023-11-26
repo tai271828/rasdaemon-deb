@@ -1,9 +1,13 @@
 Source: rasdaemon
 Section: admin
 Priority: optional
-Maintainer: Russell Coker <russell@coker.com.au>, Taihsiang Ho <e@tai271828.me>
-Build-Depends: debhelper (>= 12), quilt, libsqlite3-dev, libgettextpo-dev,
- autoconf, dh-exec
+Maintainer: Taihsiang Ho (tai271828) <e@tai271828.me>
+Uploaders: Russell Coker <russell@coker.com.au>
+Build-Depends: debhelper (>= 12), quilt, dh-exec,
+               autoconf,
+               pkg-config,
+               libsqlite3-dev, libgettextpo-dev,
+               libtraceevent-dev (>= 1)
 Standards-Version: 4.5.0
 Homepage: https://github.com/mchehab/rasdaemon
 Vcs-Git: https://salsa.debian.org/tai271828/rasdaemon

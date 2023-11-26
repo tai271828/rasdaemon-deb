@@ -1,0 +1,3 @@
+Tests: ras-mc-ctl
+Depends: @, kmod
+Restrictions: needs-root

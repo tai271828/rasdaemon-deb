@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+# ras-mc-ctl requires modprobe command from kmod
+# and the permission to open the db
+
+# check if the necessary db exists
+# the result is useful for debugging the usage of ras-mc-ctl when something
+# goes wrong
+ls /var/lib/rasdaemon/ras-mc_event.db
+
+/usr/sbin/ras-mc-ctl --summary
