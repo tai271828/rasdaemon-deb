@@ -1,3 +1,17 @@
+rasdaemon (0.8.0-2) unstable; urgency=medium
+
+  * When running autopkgtest, use isolation-machine so we can skip tests
+    requiring to interact with things which fail in a container. This matters
+    particularly with the migration from Sid to Testing for Debian Continuous
+    Integration.
+  * Add more tests that could run in any environment so autopkgtest will not
+    return code 8 i.e. "No  tests  in  this  package". This will ensure Debian
+    Continuous Integration moving forward when migrating rasdaemon from Sid to
+    Testing.
+  * Closes: #1059484
+
+ -- Taihsiang Ho (tai271828) <e@tai271828.me>  Thu, 04 Jan 2024 17:06:22 +0100
+
 rasdaemon (0.8.0-1) unstable; urgency=medium
 
   * debian: add gbp.conf

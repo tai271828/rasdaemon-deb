@@ -1,3 +1,6 @@
+Tests: artifacts
+Depends: @
+
 Tests: ras-mc-ctl
 Depends: @, kmod
-Restrictions: needs-root
+Restrictions: needs-root, isolation-machine
