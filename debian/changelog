@@ -9,6 +9,8 @@ rasdaemon (0.8.0-2) unstable; urgency=medium
     Continuous Integration moving forward when migrating rasdaemon from Sid to
     Testing.
   * Closes: #1059484
+  * Backporting f1ea76375281001cdf4a048c1a4a24d86c6fbe48 from the upstream to
+    resolve Bug#1054152 (Closes: #1054152).
 
  -- Taihsiang Ho (tai271828) <e@tai271828.me>  Thu, 04 Jan 2024 17:06:22 +0100
 
