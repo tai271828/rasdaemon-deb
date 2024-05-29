@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+
+for path in "/lib/systemd/system/ras-mc-ctl.service" "/lib/systemd/system/rasdaemon.service" "/usr/sbin/ras-mc-ctl" "/usr/sbin/rasdaemon"
+do
+  ls $path
+done
