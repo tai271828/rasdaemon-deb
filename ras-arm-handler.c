@@ -29,8 +29,8 @@
 #define BIT2 2
 
 void display_raw_data(struct trace_seq *s,
-		const uint8_t *buf,
-		uint32_t datalen)
+		      const uint8_t *buf,
+		      uint32_t datalen)
 {
 	int i = 0, line_count = 0;
 
@@ -72,7 +72,7 @@ static int count_errors(struct ras_arm_event *ev, int sev)
 
 	if (ev->pei_len % err_info_size != 0) {
 		log(TERM, LOG_ERR,
-			"The event data does not match to the ARM Processor Error Information Structure\n");
+		    "The event data does not match to the ARM Processor Error Information Structure\n");
 		return num;
 	}
 	num_pei = ev->pei_len / err_info_size;
@@ -172,7 +172,7 @@ int ras_arm_event_handler(struct trace_seq *s,
 	 */
 
 	if (ras->use_uptime)
-		now = record->ts/user_hz + ras->uptime_diff;
+		now = record->ts / user_hz + ras->uptime_diff;
 	else
 		now = time(NULL);
 
@@ -180,7 +180,7 @@ int ras_arm_event_handler(struct trace_seq *s,
 	if (tm)
 		strftime(ev.timestamp, sizeof(ev.timestamp),
 			 "%Y-%m-%d %H:%M:%S %z", tm);
-	trace_seq_printf(s, "%s\n", ev.timestamp);
+	trace_seq_printf(s, "%s", ev.timestamp);
 
 	if (tep_get_field_val(s, event, "affinity", record, &val, 1) < 0)
 		return -1;
@@ -190,67 +190,67 @@ int ras_arm_event_handler(struct trace_seq *s,
 	if (tep_get_field_val(s, event, "mpidr", record, &val, 1) < 0)
 		return -1;
 	ev.mpidr = val;
-	trace_seq_printf(s, "\n MPIDR: 0x%llx", (unsigned long long)ev.mpidr);
+	trace_seq_printf(s, " MPIDR: 0x%llx", (unsigned long long)ev.mpidr);
 
 	if (tep_get_field_val(s, event, "midr", record, &val, 1) < 0)
 		return -1;
 	ev.midr = val;
-	trace_seq_printf(s, "\n MIDR: 0x%llx", (unsigned long long)ev.midr);
+	trace_seq_printf(s, " MIDR: 0x%llx", (unsigned long long)ev.midr);
 
 	if (tep_get_field_val(s, event, "running_state", record, &val, 1) < 0)
 		return -1;
 	ev.running_state = val;
-	trace_seq_printf(s, "\n running_state: %d", ev.running_state);
+	trace_seq_printf(s, " running_state: %d", ev.running_state);
 
 	if (tep_get_field_val(s, event, "psci_state", record, &val, 1) < 0)
 		return -1;
 	ev.psci_state = val;
-	trace_seq_printf(s, "\n psci_state: %d", ev.psci_state);
+	trace_seq_printf(s, " psci_state: %d", ev.psci_state);
 
-	if (tep_get_field_val(s, event, "pei_len", record, &val, 1) < 0)
-		return -1;
-	ev.pei_len = val;
-	trace_seq_printf(s, "\n ARM Processor Err Info data len: %d\n",
-			 ev.pei_len);
+	// Upstream kKernels up to version 6.10 don't decode UEFI 2.6+ N.17 table
+	if (tep_get_field_val(s, event, "pei_len", record, &val, 1) >= 0) {
+		ev.pei_len = val;
+		trace_seq_printf(s, " ARM Processor Err Info data len: %d\n",
+				 ev.pei_len);
 
-	ev.pei_error = tep_get_field_raw(s, event, "buf", record, &len, 1);
-	if (!ev.pei_error)
-		return -1;
-	display_raw_data(s, ev.pei_error, ev.pei_len);
+		ev.pei_error = tep_get_field_raw(s, event, "buf", record, &len, 1);
+		if (!ev.pei_error)
+			return -1;
+		display_raw_data(s, ev.pei_error, ev.pei_len);
 
-	if (tep_get_field_val(s, event, "ctx_len", record, &val, 1) < 0)
-		return -1;
-	ev.ctx_len = val;
-	trace_seq_printf(s, "\n ARM Processor Err Context Info data len: %d\n",
-			 ev.ctx_len);
+		if (tep_get_field_val(s, event, "ctx_len", record, &val, 1) < 0)
+			return -1;
+		ev.ctx_len = val;
+		trace_seq_printf(s, " ARM Processor Err Context Info data len: %d\n",
+				 ev.ctx_len);
 
-	ev.ctx_error = tep_get_field_raw(s, event, "buf1", record, &len, 1);
-	if (!ev.ctx_error)
-		return -1;
-	display_raw_data(s, ev.ctx_error, ev.ctx_len);
+		ev.ctx_error = tep_get_field_raw(s, event, "buf1", record, &len, 1);
+		if (!ev.ctx_error)
+			return -1;
+		display_raw_data(s, ev.ctx_error, ev.ctx_len);
 
-	if (tep_get_field_val(s, event, "oem_len", record, &val, 1) < 0)
-		return -1;
-	ev.oem_len = val;
-	trace_seq_printf(s, "\n Vendor Specific Err Info data len: %d\n",
-			 ev.oem_len);
+		if (tep_get_field_val(s, event, "oem_len", record, &val, 1) < 0)
+			return -1;
+		ev.oem_len = val;
+		trace_seq_printf(s, " Vendor Specific Err Info data len: %d\n",
+				 ev.oem_len);
 
-	ev.vsei_error = tep_get_field_raw(s, event, "buf2", record, &len, 1);
-	if (!ev.vsei_error)
-		return -1;
+		ev.vsei_error = tep_get_field_raw(s, event, "buf2", record, &len, 1);
+		if (!ev.vsei_error)
+			return -1;
 
 #ifdef HAVE_AMP_NS_DECODE
-	//decode ampere specific error
-	decode_amp_payload0_err_regs(NULL, s,
-				(struct amp_payload0_type_sec *)ev.vsei_error);
+		//decode ampere specific error
+		decode_amp_payload0_err_regs(NULL, s,
+					     (struct amp_payload0_type_sec *)ev.vsei_error);
 #else
-	display_raw_data(s, ev.vsei_error, ev.oem_len);
+		display_raw_data(s, ev.vsei_error, ev.oem_len);
 #endif
-
 #ifdef HAVE_CPU_FAULT_ISOLATION
-	if (ras_handle_cpu_error(s, record, event, &ev, now) < 0)
-		return -1;
+		if (ras_handle_cpu_error(s, record, event, &ev, now) < 0)
+			printf("Can't do CPU fault isolation!\n");
 #endif
+	}
 
 	/* Insert data into the SGBD */
 #ifdef HAVE_SQLITE3

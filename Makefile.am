@@ -3,7 +3,10 @@ ACLOCAL_AMFLAGS=-I m4
 SUBDIRS = util man
 SYSTEMD_SERVICES_IN = misc/rasdaemon.service.in misc/ras-mc-ctl.service.in
 SYSTEMD_SERVICES = $(SYSTEMD_SERVICES_IN:.service.in=.service)
-EXTRA_DIST = $(SYSTEMD_SERVICES_IN) misc/rasdaemon.env
+EXTRA_DIST = \
+	$(SYSTEMD_SERVICES_IN) misc/rasdaemon.env \
+	contrib/mc_event_trigger \
+	contrib/mem_fail_trigger
 
 CLEANFILES= \
 	misc/ras-mc-ctl.service	\
@@ -24,7 +27,7 @@ all-local: $(SYSTEMD_SERVICES)
 
 sbin_PROGRAMS = rasdaemon
 rasdaemon_SOURCES = rasdaemon.c ras-events.c ras-mc-handler.c \
-		    bitfield.c
+		    bitfield.c trigger.c
 if WITH_SQLITE3
    rasdaemon_SOURCES += ras-record.c
 endif
@@ -73,6 +76,17 @@ endif
 if WITH_CPU_FAULT_ISOLATION
    rasdaemon_SOURCES += ras-cpu-isolation.c queue.c
 endif
+
+if WITH_CXL
+   rasdaemon_SOURCES += ras-cxl-handler.c
+endif
+if WITH_YITIAN_NS_DECODE
+   rasdaemon_SOURCES += non-standard-yitian.c
+endif
+if WITH_JAGUAR_NS_DECODE
+   rasdaemon_SOURCES += non-standard-jaguarmicro.c
+endif
+
 rasdaemon_LDADD = -lpthread $(SQLITE3_LIBS) $(LIBTRACEEVENT_LIBS)
 rasdaemon_CFLAGS = $(SQLITE3_CFLAGS) $(LIBTRACEEVENT_CFLAGS)
 
@@ -81,7 +95,8 @@ include_HEADERS = config.h  ras-events.h  ras-logger.h  ras-mc-handler.h \
 		  ras-extlog-handler.h ras-arm-handler.h ras-non-standard-handler.h \
 		  ras-devlink-handler.h ras-diskerror-handler.h rbtree.h ras-page-isolation.h \
 		  non-standard-hisilicon.h non-standard-ampere.h ras-memory-failure-handler.h \
-		  ras-cpu-isolation.h queue.h
+		  ras-cxl-handler.h ras-cpu-isolation.h queue.h non-standard-yitian.h \
+		  non-standard-jaguarmicro.h trigger.h
 
 # This rule can't be called with more than one Makefile job (like make -j8)
 # I can't figure out a way to fix that
@@ -108,6 +123,7 @@ upload:
 # custom target
 install-data-local:
 	$(install_sh) -d "$(DESTDIR)@sysconfdir@/ras/dimm_labels.d"
-if WITH_MEMORY_CE_PFA
+	$(install_sh) -d "$(DESTDIR)@sysconfdir@/ras/triggers"
 	$(install_sh) @abs_srcdir@/misc/rasdaemon.env "$(DESTDIR)@SYSCONFDEFDIR@/rasdaemon"
-endif
+	$(install_sh) @abs_srcdir@/contrib/mc_event_trigger "$(DESTDIR)@sysconfdir@/ras/triggers/mc_event_trigger"
+	$(install_sh) @abs_srcdir@/contrib/mem_fail_trigger "$(DESTDIR)@sysconfdir@/ras/triggers/mem_fail_trigger"

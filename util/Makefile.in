@@ -244,15 +244,18 @@ WITH_AER = @WITH_AER@
 WITH_AMP_NS_DECODE = @WITH_AMP_NS_DECODE@
 WITH_ARM = @WITH_ARM@
 WITH_CPU_FAULT_ISOLATION = @WITH_CPU_FAULT_ISOLATION@
+WITH_CXL = @WITH_CXL@
 WITH_DEVLINK = @WITH_DEVLINK@
 WITH_DISKERROR = @WITH_DISKERROR@
 WITH_EXTLOG = @WITH_EXTLOG@
 WITH_HISI_NS_DECODE = @WITH_HISI_NS_DECODE@
+WITH_JAGUAR_NS_DECODE = @WITH_JAGUAR_NS_DECODE@
 WITH_MCE = @WITH_MCE@
 WITH_MEMORY_CE_PFA = @WITH_MEMORY_CE_PFA@
 WITH_MEMORY_FAILURE = @WITH_MEMORY_FAILURE@
 WITH_NON_STANDARD = @WITH_NON_STANDARD@
 WITH_SQLITE3 = @WITH_SQLITE3@
+WITH_YITIAN_NS_DECODE = @WITH_YITIAN_NS_DECODE@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -326,9 +329,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu util/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign util/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu util/Makefile
+	  $(AUTOMAKE) --foreign util/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \

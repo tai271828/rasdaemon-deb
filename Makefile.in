@@ -112,6 +112,9 @@ sbin_PROGRAMS = rasdaemon$(EXEEXT)
 @WITH_MEMORY_CE_PFA_TRUE@am__append_12 = rbtree.c ras-page-isolation.c
 @WITH_AMP_NS_DECODE_TRUE@am__append_13 = non-standard-ampere.c
 @WITH_CPU_FAULT_ISOLATION_TRUE@am__append_14 = ras-cpu-isolation.c queue.c
+@WITH_CXL_TRUE@am__append_15 = ras-cxl-handler.c
+@WITH_YITIAN_NS_DECODE_TRUE@am__append_16 = non-standard-yitian.c
+@WITH_JAGUAR_NS_DECODE_TRUE@am__append_17 = non-standard-jaguarmicro.c
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ac_define_dir.m4 \
@@ -132,7 +135,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(includedir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am__rasdaemon_SOURCES_DIST = rasdaemon.c ras-events.c ras-mc-handler.c \
-	bitfield.c ras-record.c ras-aer-handler.c \
+	bitfield.c trigger.c ras-record.c ras-aer-handler.c \
 	ras-non-standard-handler.c ras-arm-handler.c ras-mce-handler.c \
 	mce-intel.c mce-amd.c mce-intel-p4-p6.c mce-intel-nehalem.c \
 	mce-intel-dunnington.c mce-intel-tulsa.c mce-intel-sb.c \
@@ -143,7 +146,9 @@ am__rasdaemon_SOURCES_DIST = rasdaemon.c ras-events.c ras-mc-handler.c \
 	ras-diskerror-handler.c ras-memory-failure-handler.c \
 	ras-report.c non-standard-hisi_hip08.c \
 	non-standard-hisilicon.c rbtree.c ras-page-isolation.c \
-	non-standard-ampere.c ras-cpu-isolation.c queue.c
+	non-standard-ampere.c ras-cpu-isolation.c queue.c \
+	ras-cxl-handler.c non-standard-yitian.c \
+	non-standard-jaguarmicro.c
 @WITH_SQLITE3_TRUE@am__objects_1 = rasdaemon-ras-record.$(OBJEXT)
 @WITH_AER_TRUE@am__objects_2 = rasdaemon-ras-aer-handler.$(OBJEXT)
 @WITH_NON_STANDARD_TRUE@am__objects_3 = rasdaemon-ras-non-standard-handler.$(OBJEXT)
@@ -180,14 +185,19 @@ am__rasdaemon_SOURCES_DIST = rasdaemon.c ras-events.c ras-mc-handler.c \
 @WITH_AMP_NS_DECODE_TRUE@am__objects_13 = rasdaemon-non-standard-ampere.$(OBJEXT)
 @WITH_CPU_FAULT_ISOLATION_TRUE@am__objects_14 = rasdaemon-ras-cpu-isolation.$(OBJEXT) \
 @WITH_CPU_FAULT_ISOLATION_TRUE@	rasdaemon-queue.$(OBJEXT)
+@WITH_CXL_TRUE@am__objects_15 = rasdaemon-ras-cxl-handler.$(OBJEXT)
+@WITH_YITIAN_NS_DECODE_TRUE@am__objects_16 = rasdaemon-non-standard-yitian.$(OBJEXT)
+@WITH_JAGUAR_NS_DECODE_TRUE@am__objects_17 = rasdaemon-non-standard-jaguarmicro.$(OBJEXT)
 am_rasdaemon_OBJECTS = rasdaemon-rasdaemon.$(OBJEXT) \
 	rasdaemon-ras-events.$(OBJEXT) \
 	rasdaemon-ras-mc-handler.$(OBJEXT) \
-	rasdaemon-bitfield.$(OBJEXT) $(am__objects_1) $(am__objects_2) \
-	$(am__objects_3) $(am__objects_4) $(am__objects_5) \
-	$(am__objects_6) $(am__objects_7) $(am__objects_8) \
-	$(am__objects_9) $(am__objects_10) $(am__objects_11) \
-	$(am__objects_12) $(am__objects_13) $(am__objects_14)
+	rasdaemon-bitfield.$(OBJEXT) rasdaemon-trigger.$(OBJEXT) \
+	$(am__objects_1) $(am__objects_2) $(am__objects_3) \
+	$(am__objects_4) $(am__objects_5) $(am__objects_6) \
+	$(am__objects_7) $(am__objects_8) $(am__objects_9) \
+	$(am__objects_10) $(am__objects_11) $(am__objects_12) \
+	$(am__objects_13) $(am__objects_14) $(am__objects_15) \
+	$(am__objects_16) $(am__objects_17)
 rasdaemon_OBJECTS = $(am_rasdaemon_OBJECTS)
 am__DEPENDENCIES_1 =
 rasdaemon_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
@@ -233,10 +243,13 @@ am__depfiles_remade = ./$(DEPDIR)/rasdaemon-bitfield.Po \
 	./$(DEPDIR)/rasdaemon-non-standard-ampere.Po \
 	./$(DEPDIR)/rasdaemon-non-standard-hisi_hip08.Po \
 	./$(DEPDIR)/rasdaemon-non-standard-hisilicon.Po \
+	./$(DEPDIR)/rasdaemon-non-standard-jaguarmicro.Po \
+	./$(DEPDIR)/rasdaemon-non-standard-yitian.Po \
 	./$(DEPDIR)/rasdaemon-queue.Po \
 	./$(DEPDIR)/rasdaemon-ras-aer-handler.Po \
 	./$(DEPDIR)/rasdaemon-ras-arm-handler.Po \
 	./$(DEPDIR)/rasdaemon-ras-cpu-isolation.Po \
+	./$(DEPDIR)/rasdaemon-ras-cxl-handler.Po \
 	./$(DEPDIR)/rasdaemon-ras-devlink-handler.Po \
 	./$(DEPDIR)/rasdaemon-ras-diskerror-handler.Po \
 	./$(DEPDIR)/rasdaemon-ras-events.Po \
@@ -249,7 +262,8 @@ am__depfiles_remade = ./$(DEPDIR)/rasdaemon-bitfield.Po \
 	./$(DEPDIR)/rasdaemon-ras-record.Po \
 	./$(DEPDIR)/rasdaemon-ras-report.Po \
 	./$(DEPDIR)/rasdaemon-rasdaemon.Po \
-	./$(DEPDIR)/rasdaemon-rbtree.Po
+	./$(DEPDIR)/rasdaemon-rbtree.Po \
+	./$(DEPDIR)/rasdaemon-trigger.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -476,15 +490,18 @@ WITH_AER = @WITH_AER@
 WITH_AMP_NS_DECODE = @WITH_AMP_NS_DECODE@
 WITH_ARM = @WITH_ARM@
 WITH_CPU_FAULT_ISOLATION = @WITH_CPU_FAULT_ISOLATION@
+WITH_CXL = @WITH_CXL@
 WITH_DEVLINK = @WITH_DEVLINK@
 WITH_DISKERROR = @WITH_DISKERROR@
 WITH_EXTLOG = @WITH_EXTLOG@
 WITH_HISI_NS_DECODE = @WITH_HISI_NS_DECODE@
+WITH_JAGUAR_NS_DECODE = @WITH_JAGUAR_NS_DECODE@
 WITH_MCE = @WITH_MCE@
 WITH_MEMORY_CE_PFA = @WITH_MEMORY_CE_PFA@
 WITH_MEMORY_FAILURE = @WITH_MEMORY_FAILURE@
 WITH_NON_STANDARD = @WITH_NON_STANDARD@
 WITH_SQLITE3 = @WITH_SQLITE3@
+WITH_YITIAN_NS_DECODE = @WITH_YITIAN_NS_DECODE@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -548,7 +565,11 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = util man
 SYSTEMD_SERVICES_IN = misc/rasdaemon.service.in misc/ras-mc-ctl.service.in
 SYSTEMD_SERVICES = $(SYSTEMD_SERVICES_IN:.service.in=.service)
-EXTRA_DIST = $(SYSTEMD_SERVICES_IN) misc/rasdaemon.env
+EXTRA_DIST = \
+	$(SYSTEMD_SERVICES_IN) misc/rasdaemon.env \
+	contrib/mc_event_trigger \
+	contrib/mem_fail_trigger
+
 CLEANFILES = \
 	misc/ras-mc-ctl.service	\
 	misc/rasdaemon.service
@@ -560,11 +581,12 @@ DISTCLEANFILES = misc/rasdaemon.spec
 # files to AC_CONFIG_FILES in configure.ac
 SUFFIXES = .service.in .service
 rasdaemon_SOURCES = rasdaemon.c ras-events.c ras-mc-handler.c \
-	bitfield.c $(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_4) $(am__append_5) $(am__append_6) \
-	$(am__append_7) $(am__append_8) $(am__append_9) \
-	$(am__append_10) $(am__append_11) $(am__append_12) \
-	$(am__append_13) $(am__append_14)
+	bitfield.c trigger.c $(am__append_1) $(am__append_2) \
+	$(am__append_3) $(am__append_4) $(am__append_5) \
+	$(am__append_6) $(am__append_7) $(am__append_8) \
+	$(am__append_9) $(am__append_10) $(am__append_11) \
+	$(am__append_12) $(am__append_13) $(am__append_14) \
+	$(am__append_15) $(am__append_16) $(am__append_17)
 rasdaemon_LDADD = -lpthread $(SQLITE3_LIBS) $(LIBTRACEEVENT_LIBS)
 rasdaemon_CFLAGS = $(SQLITE3_CFLAGS) $(LIBTRACEEVENT_CFLAGS)
 include_HEADERS = config.h  ras-events.h  ras-logger.h  ras-mc-handler.h \
@@ -572,7 +594,8 @@ include_HEADERS = config.h  ras-events.h  ras-logger.h  ras-mc-handler.h \
 		  ras-extlog-handler.h ras-arm-handler.h ras-non-standard-handler.h \
 		  ras-devlink-handler.h ras-diskerror-handler.h rbtree.h ras-page-isolation.h \
 		  non-standard-hisilicon.h non-standard-ampere.h ras-memory-failure-handler.h \
-		  ras-cpu-isolation.h queue.h
+		  ras-cxl-handler.h ras-cpu-isolation.h queue.h non-standard-yitian.h \
+		  non-standard-jaguarmicro.h trigger.h
 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
@@ -585,15 +608,15 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
-	      echo ' cd $(srcdir) && $(AUTOMAKE) --gnu'; \
-	      $(am__cd) $(srcdir) && $(AUTOMAKE) --gnu \
+	      echo ' cd $(srcdir) && $(AUTOMAKE) --foreign'; \
+	      $(am__cd) $(srcdir) && $(AUTOMAKE) --foreign \
 		&& exit 0; \
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu Makefile
+	  $(AUTOMAKE) --foreign Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -709,10 +732,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-non-standard-ampere.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-non-standard-hisi_hip08.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-non-standard-hisilicon.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-non-standard-jaguarmicro.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-non-standard-yitian.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-queue.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-ras-aer-handler.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-ras-arm-handler.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-ras-cpu-isolation.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-ras-cxl-handler.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-ras-devlink-handler.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-ras-diskerror-handler.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-ras-events.Po@am__quote@ # am--include-marker
@@ -726,6 +752,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-ras-report.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-rasdaemon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-rbtree.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rasdaemon-trigger.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -809,6 +836,20 @@ rasdaemon-bitfield.obj: bitfield.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='bitfield.c' object='rasdaemon-bitfield.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -c -o rasdaemon-bitfield.obj `if test -f 'bitfield.c'; then $(CYGPATH_W) 'bitfield.c'; else $(CYGPATH_W) '$(srcdir)/bitfield.c'; fi`
+
+rasdaemon-trigger.o: trigger.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -MT rasdaemon-trigger.o -MD -MP -MF $(DEPDIR)/rasdaemon-trigger.Tpo -c -o rasdaemon-trigger.o `test -f 'trigger.c' || echo '$(srcdir)/'`trigger.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rasdaemon-trigger.Tpo $(DEPDIR)/rasdaemon-trigger.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trigger.c' object='rasdaemon-trigger.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -c -o rasdaemon-trigger.o `test -f 'trigger.c' || echo '$(srcdir)/'`trigger.c
+
+rasdaemon-trigger.obj: trigger.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -MT rasdaemon-trigger.obj -MD -MP -MF $(DEPDIR)/rasdaemon-trigger.Tpo -c -o rasdaemon-trigger.obj `if test -f 'trigger.c'; then $(CYGPATH_W) 'trigger.c'; else $(CYGPATH_W) '$(srcdir)/trigger.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rasdaemon-trigger.Tpo $(DEPDIR)/rasdaemon-trigger.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trigger.c' object='rasdaemon-trigger.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -c -o rasdaemon-trigger.obj `if test -f 'trigger.c'; then $(CYGPATH_W) 'trigger.c'; else $(CYGPATH_W) '$(srcdir)/trigger.c'; fi`
 
 rasdaemon-ras-record.o: ras-record.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -MT rasdaemon-ras-record.o -MD -MP -MF $(DEPDIR)/rasdaemon-ras-record.Tpo -c -o rasdaemon-ras-record.o `test -f 'ras-record.c' || echo '$(srcdir)/'`ras-record.c
@@ -1272,6 +1313,48 @@ rasdaemon-queue.obj: queue.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -c -o rasdaemon-queue.obj `if test -f 'queue.c'; then $(CYGPATH_W) 'queue.c'; else $(CYGPATH_W) '$(srcdir)/queue.c'; fi`
 
+rasdaemon-ras-cxl-handler.o: ras-cxl-handler.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -MT rasdaemon-ras-cxl-handler.o -MD -MP -MF $(DEPDIR)/rasdaemon-ras-cxl-handler.Tpo -c -o rasdaemon-ras-cxl-handler.o `test -f 'ras-cxl-handler.c' || echo '$(srcdir)/'`ras-cxl-handler.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rasdaemon-ras-cxl-handler.Tpo $(DEPDIR)/rasdaemon-ras-cxl-handler.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ras-cxl-handler.c' object='rasdaemon-ras-cxl-handler.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -c -o rasdaemon-ras-cxl-handler.o `test -f 'ras-cxl-handler.c' || echo '$(srcdir)/'`ras-cxl-handler.c
+
+rasdaemon-ras-cxl-handler.obj: ras-cxl-handler.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -MT rasdaemon-ras-cxl-handler.obj -MD -MP -MF $(DEPDIR)/rasdaemon-ras-cxl-handler.Tpo -c -o rasdaemon-ras-cxl-handler.obj `if test -f 'ras-cxl-handler.c'; then $(CYGPATH_W) 'ras-cxl-handler.c'; else $(CYGPATH_W) '$(srcdir)/ras-cxl-handler.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rasdaemon-ras-cxl-handler.Tpo $(DEPDIR)/rasdaemon-ras-cxl-handler.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ras-cxl-handler.c' object='rasdaemon-ras-cxl-handler.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -c -o rasdaemon-ras-cxl-handler.obj `if test -f 'ras-cxl-handler.c'; then $(CYGPATH_W) 'ras-cxl-handler.c'; else $(CYGPATH_W) '$(srcdir)/ras-cxl-handler.c'; fi`
+
+rasdaemon-non-standard-yitian.o: non-standard-yitian.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -MT rasdaemon-non-standard-yitian.o -MD -MP -MF $(DEPDIR)/rasdaemon-non-standard-yitian.Tpo -c -o rasdaemon-non-standard-yitian.o `test -f 'non-standard-yitian.c' || echo '$(srcdir)/'`non-standard-yitian.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rasdaemon-non-standard-yitian.Tpo $(DEPDIR)/rasdaemon-non-standard-yitian.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='non-standard-yitian.c' object='rasdaemon-non-standard-yitian.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -c -o rasdaemon-non-standard-yitian.o `test -f 'non-standard-yitian.c' || echo '$(srcdir)/'`non-standard-yitian.c
+
+rasdaemon-non-standard-yitian.obj: non-standard-yitian.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -MT rasdaemon-non-standard-yitian.obj -MD -MP -MF $(DEPDIR)/rasdaemon-non-standard-yitian.Tpo -c -o rasdaemon-non-standard-yitian.obj `if test -f 'non-standard-yitian.c'; then $(CYGPATH_W) 'non-standard-yitian.c'; else $(CYGPATH_W) '$(srcdir)/non-standard-yitian.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rasdaemon-non-standard-yitian.Tpo $(DEPDIR)/rasdaemon-non-standard-yitian.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='non-standard-yitian.c' object='rasdaemon-non-standard-yitian.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -c -o rasdaemon-non-standard-yitian.obj `if test -f 'non-standard-yitian.c'; then $(CYGPATH_W) 'non-standard-yitian.c'; else $(CYGPATH_W) '$(srcdir)/non-standard-yitian.c'; fi`
+
+rasdaemon-non-standard-jaguarmicro.o: non-standard-jaguarmicro.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -MT rasdaemon-non-standard-jaguarmicro.o -MD -MP -MF $(DEPDIR)/rasdaemon-non-standard-jaguarmicro.Tpo -c -o rasdaemon-non-standard-jaguarmicro.o `test -f 'non-standard-jaguarmicro.c' || echo '$(srcdir)/'`non-standard-jaguarmicro.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rasdaemon-non-standard-jaguarmicro.Tpo $(DEPDIR)/rasdaemon-non-standard-jaguarmicro.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='non-standard-jaguarmicro.c' object='rasdaemon-non-standard-jaguarmicro.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -c -o rasdaemon-non-standard-jaguarmicro.o `test -f 'non-standard-jaguarmicro.c' || echo '$(srcdir)/'`non-standard-jaguarmicro.c
+
+rasdaemon-non-standard-jaguarmicro.obj: non-standard-jaguarmicro.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -MT rasdaemon-non-standard-jaguarmicro.obj -MD -MP -MF $(DEPDIR)/rasdaemon-non-standard-jaguarmicro.Tpo -c -o rasdaemon-non-standard-jaguarmicro.obj `if test -f 'non-standard-jaguarmicro.c'; then $(CYGPATH_W) 'non-standard-jaguarmicro.c'; else $(CYGPATH_W) '$(srcdir)/non-standard-jaguarmicro.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rasdaemon-non-standard-jaguarmicro.Tpo $(DEPDIR)/rasdaemon-non-standard-jaguarmicro.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='non-standard-jaguarmicro.c' object='rasdaemon-non-standard-jaguarmicro.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rasdaemon_CFLAGS) $(CFLAGS) -c -o rasdaemon-non-standard-jaguarmicro.obj `if test -f 'non-standard-jaguarmicro.c'; then $(CYGPATH_W) 'non-standard-jaguarmicro.c'; else $(CYGPATH_W) '$(srcdir)/non-standard-jaguarmicro.c'; fi`
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
@@ -1671,10 +1754,13 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/rasdaemon-non-standard-ampere.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-non-standard-hisi_hip08.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-non-standard-hisilicon.Po
+	-rm -f ./$(DEPDIR)/rasdaemon-non-standard-jaguarmicro.Po
+	-rm -f ./$(DEPDIR)/rasdaemon-non-standard-yitian.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-queue.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-aer-handler.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-arm-handler.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-cpu-isolation.Po
+	-rm -f ./$(DEPDIR)/rasdaemon-ras-cxl-handler.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-devlink-handler.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-diskerror-handler.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-events.Po
@@ -1688,6 +1774,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-report.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-rasdaemon.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-rbtree.Po
+	-rm -f ./$(DEPDIR)/rasdaemon-trigger.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-libtool distclean-tags
@@ -1755,10 +1842,13 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/rasdaemon-non-standard-ampere.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-non-standard-hisi_hip08.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-non-standard-hisilicon.Po
+	-rm -f ./$(DEPDIR)/rasdaemon-non-standard-jaguarmicro.Po
+	-rm -f ./$(DEPDIR)/rasdaemon-non-standard-yitian.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-queue.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-aer-handler.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-arm-handler.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-cpu-isolation.Po
+	-rm -f ./$(DEPDIR)/rasdaemon-ras-cxl-handler.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-devlink-handler.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-diskerror-handler.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-events.Po
@@ -1772,6 +1862,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/rasdaemon-ras-report.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-rasdaemon.Po
 	-rm -f ./$(DEPDIR)/rasdaemon-rbtree.Po
+	-rm -f ./$(DEPDIR)/rasdaemon-trigger.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -1846,7 +1937,10 @@ upload:
 # custom target
 install-data-local:
 	$(install_sh) -d "$(DESTDIR)@sysconfdir@/ras/dimm_labels.d"
-@WITH_MEMORY_CE_PFA_TRUE@	$(install_sh) @abs_srcdir@/misc/rasdaemon.env "$(DESTDIR)@SYSCONFDEFDIR@/rasdaemon"
+	$(install_sh) -d "$(DESTDIR)@sysconfdir@/ras/triggers"
+	$(install_sh) @abs_srcdir@/misc/rasdaemon.env "$(DESTDIR)@SYSCONFDEFDIR@/rasdaemon"
+	$(install_sh) @abs_srcdir@/contrib/mc_event_trigger "$(DESTDIR)@sysconfdir@/ras/triggers/mc_event_trigger"
+	$(install_sh) @abs_srcdir@/contrib/mem_fail_trigger "$(DESTDIR)@sysconfdir@/ras/triggers/mem_fail_trigger"
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

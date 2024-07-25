@@ -17,12 +17,11 @@
 #include "ras-events.h"
 #include <traceevent/event-parse.h>
 
-#define BIT(nr)                 (1UL << (nr))
-#define BIT_ULL(nr)             (1ULL << (nr))
-
 struct ras_ns_ev_decoder {
 	struct ras_ns_ev_decoder *next;
+	uint16_t ref_count;
 	const char *sec_type;
+	int (*add_table)(struct ras_events *ras, struct ras_ns_ev_decoder *ev_decoder);
 	int (*decode)(struct ras_events *ras, struct ras_ns_ev_decoder *ev_decoder,
 		      struct trace_seq *s, struct ras_non_standard_event *event);
 #ifdef HAVE_SQLITE3
@@ -39,6 +38,8 @@ void print_le_hex(struct trace_seq *s, const uint8_t *buf, int index);
 
 #ifdef HAVE_NON_STANDARD
 int register_ns_ev_decoder(struct ras_ns_ev_decoder *ns_ev_decoder);
+int ras_ns_add_vendor_tables(struct ras_events *ras);
+void ras_ns_finalize_vendor_tables(void);
 #else
 static inline int register_ns_ev_decoder(struct ras_ns_ev_decoder *ns_ev_decoder) { return 0; };
 #endif

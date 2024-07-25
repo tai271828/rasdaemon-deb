@@ -39,6 +39,14 @@ enum {
 	DEVLINK_EVENT,
 	DISKERROR_EVENT,
 	MF_EVENT,
+	CXL_POISON_EVENT,
+	CXL_AER_UE_EVENT,
+	CXL_AER_CE_EVENT,
+	CXL_OVERFLOW_EVENT,
+	CXL_GENERIC_EVENT,
+	CXL_GENERAL_MEDIA_EVENT,
+	CXL_DRAM_EVENT,
+	CXL_MEMORY_MODULE_EVENT,
 	NR_EVENTS
 };
 
@@ -56,7 +64,9 @@ struct ras_events {
 	time_t		uptime_diff;
 
 	/* For ras-record */
-	void		*db_priv;
+	void	*db_priv;
+	int	db_ref_count;
+	pthread_mutex_t db_lock;
 
 	/* For the mce handler */
 	struct mce_priv	*mce_priv;
@@ -73,7 +83,6 @@ struct pthread_data {
 	struct ras_events	*ras;
 	int			cpu;
 };
-
 
 /* Should match the code at Kernel's include/linux/edac.c */
 enum hw_event_mc_err_type {
@@ -100,6 +109,7 @@ enum ghes_severity {
 
 /* Function prototypes */
 int toggle_ras_mc_event(int enable);
+int ras_offline_mce_event(struct ras_mc_offline_event *event);
 int handle_ras_events(int record_events);
 
 #endif

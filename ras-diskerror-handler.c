@@ -30,7 +30,6 @@
 #include "ras-logger.h"
 #include "ras-report.h"
 
-
 static const struct {
 	int             error;
 	const char      *name;
@@ -52,7 +51,7 @@ static const struct {
 
 static const char *get_blk_error(int err)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < ARRAY_SIZE(blk_errors); i++)
 		if (blk_errors[i].error == err)
@@ -82,7 +81,7 @@ int ras_diskerror_event_handler(struct trace_seq *s,
 	 */
 
 	if (ras->use_uptime)
-		now = record->ts/user_hz + ras->uptime_diff;
+		now = record->ts / user_hz + ras->uptime_diff;
 	else
 		now = time(NULL);
 
