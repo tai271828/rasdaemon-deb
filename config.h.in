@@ -12,8 +12,14 @@
 /* "have ARM events collect" */
 #undef HAVE_ARM
 
+/* "have block_rq_error tracepoint" */
+#undef HAVE_BLK_RQ_ERROR
+
 /* "have cpu online fault isolation" */
 #undef HAVE_CPU_FAULT_ISOLATION
+
+/* "have CXL events collect" */
+#undef HAVE_CXL
 
 /* "have devlink health events collect" */
 #undef HAVE_DEVLINK
@@ -32,6 +38,9 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* "have JaguarMicro UNKNOWN_SEC events decode" */
+#undef HAVE_JAGUAR_NS_DECODE
 
 /* "have PCIe MCE events collect" */
 #undef HAVE_MCE
@@ -71,6 +80,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* "have YITIAN UNKNOWN_SEC events decode" */
+#undef HAVE_YITIAN_NS_DECODE
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR

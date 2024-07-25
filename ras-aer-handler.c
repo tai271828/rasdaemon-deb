@@ -35,6 +35,7 @@ static const char *aer_cor_errors[32] = {
 	[8]  = "RELAY_NUM Rollover",
 	[12] = "Replay Timer Timeout",
 	[13] = "Advisory Non-Fatal",
+	[14] = "Corrected Internal Error",
 };
 
 /* bit field meaning for uncorrectable error */
@@ -67,9 +68,11 @@ int ras_aer_event_handler(struct trace_seq *s,
 	struct tm *tm;
 	struct ras_aer_event ev;
 	char buf[BUF_LEN];
+#ifdef HAVE_AMP_NS_DECODE
 	char ipmi_add_sel[105];
 	uint8_t sel_data[5];
-	int seg, bus, dev, fn;
+	int seg, bus, dev, fn, rc;
+#endif
 
 	/*
 	 * Newer kernels (3.10-rc1 or upper) provide an uptime clock.
@@ -81,7 +84,7 @@ int ras_aer_event_handler(struct trace_seq *s,
 	 */
 
 	if (ras->use_uptime)
-		now = record->ts/user_hz + ras->uptime_diff;
+		now = record->ts / user_hz + ras->uptime_diff;
 	else
 		now = time(NULL);
 
@@ -132,19 +135,27 @@ int ras_aer_event_handler(struct trace_seq *s,
 	switch (severity_val) {
 	case HW_EVENT_AER_UNCORRECTED_NON_FATAL:
 		ev.error_type = "Uncorrected (Non-Fatal)";
+#ifdef HAVE_AMP_NS_DECODE
 		sel_data[0] = 0xca;
+#endif
 		break;
 	case HW_EVENT_AER_UNCORRECTED_FATAL:
 		ev.error_type = "Uncorrected (Fatal)";
+#ifdef HAVE_AMP_NS_DECODE
 		sel_data[0] = 0xca;
+#endif
 		break;
 	case HW_EVENT_AER_CORRECTED:
 		ev.error_type = "Corrected";
+#ifdef HAVE_AMP_NS_DECODE
 		sel_data[0] = 0xbf;
+#endif
 		break;
 	default:
 		ev.error_type = "Unknown severity";
+#ifdef HAVE_AMP_NS_DECODE
 		sel_data[0] = 0xbf;
+#endif
 	}
 	trace_seq_puts(s, ev.error_type);
 
@@ -176,10 +187,12 @@ int ras_aer_event_handler(struct trace_seq *s,
 	sel_data[4] = (((dev & 0x1f) << 3) | (fn & 0x7));
 
 	sprintf(ipmi_add_sel,
-	  "ipmitool raw 0x0a 0x44 0x00 0x00 0xc0 0x00 0x00 0x00 0x00 0x3a 0xcd 0x00 0xc0 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+		"ipmitool raw 0x0a 0x44 0x00 0x00 0xc0 0x00 0x00 0x00 0x00 0x3a 0xcd 0x00 0xc0 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
 	  sel_data[0], sel_data[1], sel_data[2], sel_data[3], sel_data[4]);
 
-	system(ipmi_add_sel);
+	rc = system(ipmi_add_sel);
+	if (rc)
+		log(SYSLOG, LOG_WARNING, "Failed to execute ipmitool\n");
 #endif
 
 	return 0;

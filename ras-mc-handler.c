@@ -15,16 +15,103 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 */
+#define _GNU_SOURCE
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <traceevent/kbuffer.h>
+#include <unistd.h>
+
 #include "ras-mc-handler.h"
-#include "ras-record.h"
 #include "ras-logger.h"
 #include "ras-page-isolation.h"
+#include "ras-record.h"
 #include "ras-report.h"
+#include "trigger.h"
+
+#define MAX_ENV 30
+static const char *mc_ce_trigger = NULL;
+static const char *mc_ue_trigger = NULL;
+
+void mc_event_trigger_setup(void)
+{
+	const char *trigger;
+
+	trigger = getenv("MC_CE_TRIGGER");
+	if (trigger && strcmp(trigger, "")) {
+		mc_ce_trigger = trigger_check(trigger);
+
+		if (!mc_ce_trigger) {
+			log(ALL, LOG_ERR,
+			    "Cannot access mc_event ce trigger `%s`\n",
+			    trigger);
+		} else {
+			log(ALL, LOG_INFO,
+			    "Setup mc_event ce trigger `%s`\n",
+			    trigger);
+		}
+	}
+
+	trigger = getenv("MC_UE_TRIGGER");
+	if (trigger && strcmp(trigger, "")) {
+		mc_ue_trigger = trigger_check(trigger);
+
+		if (!mc_ue_trigger) {
+			log(ALL, LOG_ERR,
+			    "Cannot access mc_event ue trigger `%s`\n",
+			    trigger);
+		} else {
+			log(ALL, LOG_INFO,
+			    "Setup mc_event ue trigger `%s`\n",
+			    trigger);
+		}
+	}
+}
+
+static void run_mc_trigger(struct ras_mc_event *ev, const char *mc_trigger)
+{
+	char *env[MAX_ENV];
+	int ei = 0;
+	int i;
+
+	if (asprintf(&env[ei++], "PATH=%s", getenv("PATH") ?: "/sbin:/usr/sbin:/bin:/usr/bin") < 0)
+		goto free;
+	if (asprintf(&env[ei++], "TIMESTAMP=%s", ev->timestamp) < 0)
+		goto free;
+	if (asprintf(&env[ei++], "COUNT=%d", ev->error_count) < 0)
+		goto free;
+	if (asprintf(&env[ei++], "TYPE=%s", ev->error_type) < 0)
+		goto free;
+	if (asprintf(&env[ei++], "MESSAGE=%s", ev->msg) < 0)
+		goto free;
+	if (asprintf(&env[ei++], "LABEL=%s", ev->label) < 0)
+		goto free;
+	if (asprintf(&env[ei++], "MC_INDEX=%d", ev->mc_index) < 0)
+		goto free;
+	if (asprintf(&env[ei++], "TOP_LAYER=%d", ev->top_layer) < 0)
+		goto free;
+	if (asprintf(&env[ei++], "MIDDLE_LAYER=%d", ev->middle_layer) < 0)
+		goto free;
+	if (asprintf(&env[ei++], "LOWER_LAYER=%d", ev->lower_layer) < 0)
+		goto free;
+	if (asprintf(&env[ei++], "ADDRESS=%llx", ev->address) < 0)
+		goto free;
+	if (asprintf(&env[ei++], "GRAIN=%lld", ev->grain) < 0)
+		goto free;
+	if (asprintf(&env[ei++], "SYNDROME=%llx", ev->syndrome) < 0)
+		goto free;
+	if (asprintf(&env[ei++], "DRIVER_DETAIL=%s", ev->driver_detail) < 0)
+		goto free;
+	env[ei] = NULL;
+	assert(ei < MAX_ENV);
+
+	run_trigger(mc_trigger, NULL, env, "mc_event");
+
+free:
+	for (i = 0; i < ei; i++)
+		free(env[i]);
+}
 
 int ras_mc_event_handler(struct trace_seq *s,
 			 struct tep_record *record,
@@ -48,7 +135,7 @@ int ras_mc_event_handler(struct trace_seq *s,
 	 */
 
 	if (ras->use_uptime)
-		now = record->ts/user_hz + ras->uptime_diff;
+		now = record->ts / user_hz + ras->uptime_diff;
 	else
 		now = time(NULL);
 
@@ -121,22 +208,22 @@ int ras_mc_event_handler(struct trace_seq *s,
 	if (tep_get_field_val(s,  event, "top_layer", record, &val, 1) < 0)
 		goto parse_error;
 	parsed_fields++;
-	ev.top_layer = (signed char) val;
+	ev.top_layer = (signed char)val;
 
 	if (tep_get_field_val(s,  event, "middle_layer", record, &val, 1) < 0)
 		goto parse_error;
 	parsed_fields++;
-	ev.middle_layer = (signed char) val;
+	ev.middle_layer = (signed char)val;
 
 	if (tep_get_field_val(s,  event, "lower_layer", record, &val, 1) < 0)
 		goto parse_error;
 	parsed_fields++;
-	ev.lower_layer = (signed char) val;
+	ev.lower_layer = (signed char)val;
 
 	if (ev.top_layer >= 0 || ev.middle_layer >= 0 || ev.lower_layer >= 0) {
 		if (ev.lower_layer >= 0)
 			trace_seq_printf(s, " location: %d:%d:%d",
-					ev.top_layer, ev.middle_layer, ev.lower_layer);
+					 ev.top_layer, ev.middle_layer, ev.lower_layer);
 		else if (ev.middle_layer >= 0)
 			trace_seq_printf(s, " location: %d:%d",
 					 ev.top_layer, ev.middle_layer);
@@ -158,7 +245,6 @@ int ras_mc_event_handler(struct trace_seq *s,
 
 	ev.grain = val;
 	trace_seq_printf(s, " grain: %lld", ev.grain);
-
 
 	if (tep_get_field_val(s,  event, "syndrome", record, &val, 1) < 0)
 		goto parse_error;
@@ -194,6 +280,12 @@ int ras_mc_event_handler(struct trace_seq *s,
 	/* Report event to ABRT */
 	ras_report_mc_event(ras, &ev);
 #endif
+
+	if (mc_ce_trigger && !strcmp(ev.error_type, "Corrected"))
+		run_mc_trigger(&ev, mc_ce_trigger);
+
+	if (mc_ue_trigger && !strcmp(ev.error_type, "Uncorrected"))
+		run_mc_trigger(&ev, mc_ue_trigger);
 
 	return 0;
 

@@ -1,9 +1,9 @@
-AC_INIT([RASdaemon],[0.8.0])
+AC_INIT([RASdaemon],[0.8.1])
 AM_SILENT_RULES([yes])
 AC_CANONICAL_TARGET
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign])
 AC_PROG_CC
 AC_PROG_INSTALL
 LT_INIT
@@ -117,6 +117,19 @@ AS_IF([test "x$enable_diskerror" = "xyes" || test "x$enable_all" = "xyes"], [
 AM_CONDITIONAL([WITH_DISKERROR], [test x$enable_diskerror = xyes || test x$enable_all = xyes])
 AM_COND_IF([WITH_DISKERROR], [USE_DISKERROR="yes"], [USE_DISKERROR="no"])
 
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
+#ifdef RHEL_RELEASE_CODE
+#if RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(9, 1)
+# error kernel too old
+#endif
+#else
+# error kernel too old
+#endif
+#endif
+]])], [AC_DEFINE(HAVE_BLK_RQ_ERROR,1,"have block_rq_error tracepoint")])
+
 AC_ARG_ENABLE([memory_failure],
     AS_HELP_STRING([--enable-memory-failure], [enable memory failure events (currently experimental)]))
 
@@ -126,6 +139,16 @@ AS_IF([test "x$enable_memory_failure" = "xyes" || test "x$enable_all" = "xyes"],
 ])
 AM_CONDITIONAL([WITH_MEMORY_FAILURE], [test x$enable_memory_failure = xyes || test x$enable_all = xyes])
 AM_COND_IF([WITH_MEMORY_FAILURE], [USE_MEMORY_FAILURE="yes"], [USE_MEMORY_FAILURE="no"])
+
+AC_ARG_ENABLE([cxl],
+    AS_HELP_STRING([--enable-cxl], [enable CXL events (currently experimental)]))
+
+AS_IF([test "x$enable_cxl" = "xyes" || test "x$enable_all" == "xyes"], [
+  AC_DEFINE(HAVE_CXL,1,"have CXL events collect")
+  AC_SUBST([WITH_CXL])
+])
+AM_CONDITIONAL([WITH_CXL], [test x$enable_cxl = xyes || test x$enable_all == xyes])
+AM_COND_IF([WITH_CXL], [USE_CXL="yes"], [USE_CXL="no"])
 
 AC_ARG_ENABLE([abrt_report],
     AS_HELP_STRING([--enable-abrt-report], [enable report event to ABRT (currently experimental)]))
@@ -167,15 +190,35 @@ AS_IF([test "x$enable_amp_ns_decode" = "xyes" || test "x$enable_all" = "xyes"], 
 AM_CONDITIONAL([WITH_AMP_NS_DECODE], [test x$enable_amp_ns_decode = xyes || test x$enable_all = xyes])
 AM_COND_IF([WITH_AMP_NS_DECODE], [USE_AMP_NS_DECODE="yes"], [USE_AMP_NS_DECODE="no"])
 
+AC_ARG_ENABLE([jaguar_ns_decode],
+    AS_HELP_STRING([--enable-jaguar-ns-decode], [enable JAGUAR_NS_DECODE events (currently experimental)]))
+
+AS_IF([test "x$enable_jaguar_ns_decode" = "xyes" || test "x$enable_all" = "xyes"], [
+  AC_DEFINE(HAVE_JAGUAR_NS_DECODE,1,"have JaguarMicro UNKNOWN_SEC events decode")
+  AC_SUBST([WITH_JAGUAR_NS_DECODE])
+])
+AM_CONDITIONAL([WITH_JAGUAR_NS_DECODE], [test x$enable_jaguar_ns_decode = xyes || test x$enable_all = xyes])
+AM_COND_IF([WITH_JAGUAR_NS_DECODE], [USE_JAGUAR_NS_DECODE="yes"], [USE_JAGUAR_NS_DECODE="no"])
+
 AC_ARG_ENABLE([cpu_fault_isolation],
     AS_HELP_STRING([--enable-cpu-fault-isolation], [enable cpu online fault isolation]))
 
-AS_IF([test "x$enable_cpu_fault_isolation" = "xyes" || test "x$enable_all" == "xyes"], [
+AS_IF([test "x$enable_cpu_fault_isolation" = "xyes" || test "x$enable_all" = "xyes"], [
   AC_DEFINE(HAVE_CPU_FAULT_ISOLATION,1,"have cpu online fault isolation")
   AC_SUBST([WITH_CPU_FAULT_ISOLATION])
 ])
-AM_CONDITIONAL([WITH_CPU_FAULT_ISOLATION], [test x$enable_cpu_fault_isolation = xyes || test x$enable_all == xyes])
+AM_CONDITIONAL([WITH_CPU_FAULT_ISOLATION], [test x$enable_cpu_fault_isolation = xyes || test x$enable_all = xyes])
 AM_COND_IF([WITH_CPU_FAULT_ISOLATION], [USE_CPU_FAULT_ISOLATION="yes"], [USE_CPU_FAULT_ISOLATION="no"])
+
+AC_ARG_ENABLE([yitian_ns_decode],
+    AS_HELP_STRING([--enable-yitian-ns-decode], [enable YITIAN_NS_DECODE events (currently experimental)]))
+
+AS_IF([test "x$enable_yitian_ns_decode" = "xyes" || test "x$enable_all" == "xyes"], [
+  AC_DEFINE(HAVE_YITIAN_NS_DECODE,1,"have YITIAN UNKNOWN_SEC events decode")
+  AC_SUBST([WITH_YITIAN_NS_DECODE])
+])
+AM_CONDITIONAL([WITH_YITIAN_NS_DECODE], [test x$enable_yitian_ns_decode = xyes || test x$enable_all == xyes])
+AM_COND_IF([WITH_YITIAN_NS_DECODE], [USE_YITIAN_NS_DECODE="yes"], [USE_YITIAN_NS_DECODE="no"])
 
 test "$sysconfdir" = '${prefix}/etc' && sysconfdir=/etc
 
@@ -215,7 +258,10 @@ compile time options summary
     DEVLINK             : $USE_DEVLINK
     Disk I/O errors     : $USE_DISKERROR
     Memory Failure      : $USE_MEMORY_FAILURE
+    CXL events          : $USE_CXL
     Memory CE PFA       : $USE_MEMORY_CE_PFA
     AMP RAS errors      : $USE_AMP_NS_DECODE
     CPU fault isolation : $USE_CPU_FAULT_ISOLATION
+    YITIAN RAS errors   : $USE_YITIAN_NS_DECODE
+    JAGUAR RAS errors   : $USE_JAGUAR_NS_DECODE
 EOF

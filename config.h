@@ -13,8 +13,14 @@
 /* "have ARM events collect" */
 #define HAVE_ARM 1
 
+/* "have block_rq_error tracepoint" */
+#define HAVE_BLK_RQ_ERROR 1
+
 /* "have cpu online fault isolation" */
 #define HAVE_CPU_FAULT_ISOLATION 1
+
+/* "have CXL events collect" */
+#define HAVE_CXL 1
 
 /* "have devlink health events collect" */
 #define HAVE_DEVLINK 1
@@ -33,6 +39,9 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
+
+/* "have JaguarMicro UNKNOWN_SEC events decode" */
+#define HAVE_JAGUAR_NS_DECODE 1
 
 /* "have PCIe MCE events collect" */
 #define HAVE_MCE 1
@@ -72,6 +81,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #define HAVE_UNISTD_H 1
+
+/* "have YITIAN UNKNOWN_SEC events decode" */
+#define HAVE_YITIAN_NS_DECODE 1
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #define LT_OBJDIR ".libs/"
@@ -113,7 +125,7 @@
 #define PACKAGE_NAME "RASdaemon"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "RASdaemon 0.8.0"
+#define PACKAGE_STRING "RASdaemon 0.8.1"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "rasdaemon"
@@ -122,7 +134,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.8.0"
+#define PACKAGE_VERSION "0.8.1"
 
 /* rasdaemon db store state dir */
 #define RASSTATEDIR "/usr/local/var/lib/rasdaemon"
@@ -136,4 +148,4 @@
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "0.8.0"
+#define VERSION "0.8.1"

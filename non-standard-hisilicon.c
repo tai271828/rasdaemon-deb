@@ -88,10 +88,10 @@ struct hisi_event {
 
 #ifdef HAVE_SQLITE3
 void record_vendor_data(struct ras_ns_ev_decoder *ev_decoder,
-			       enum hisi_oem_data_type data_type,
+			enum hisi_oem_data_type data_type,
 			       int id, int64_t data, const char *text)
 {
-	if (ev_decoder->stmt_dec_record == NULL)
+	if (!ev_decoder->stmt_dec_record)
 		return;
 
 	switch (data_type) {
@@ -111,7 +111,7 @@ int step_vendor_data_tab(struct ras_ns_ev_decoder *ev_decoder, const char *name)
 {
 	int rc;
 
-	if (ev_decoder->stmt_dec_record == NULL)
+	if (!ev_decoder->stmt_dec_record)
 		return 0;
 
 	rc = sqlite3_step(ev_decoder->stmt_dec_record);
@@ -171,13 +171,13 @@ static const struct db_table_descriptor hisi_common_section_tab = {
 };
 #endif
 
-static const char* soc_desc[] = {
+static const char *soc_desc[] = {
 	"Kunpeng916",
 	"Kunpeng920",
 	"Kunpeng930",
 };
 
-static const char* module_name[] = {
+static const char *module_name[] = {
 	"MN",
 	"PLL",
 	"SLLC",
@@ -221,9 +221,9 @@ static const char* module_name[] = {
 	"HBMC",
 };
 
-static const char* get_soc_desc(uint8_t soc_id)
+static const char *get_soc_desc(uint8_t soc_id)
 {
-	if (soc_id >= sizeof(soc_desc)/sizeof(char *))
+	if (soc_id >= sizeof(soc_desc) / sizeof(char *))
 		return "unknown";
 
 	return soc_desc[soc_id];
@@ -232,7 +232,7 @@ static const char* get_soc_desc(uint8_t soc_id)
 static void decode_module(struct ras_ns_ev_decoder *ev_decoder,
 			  struct hisi_event *event, uint8_t module_id)
 {
-	if (module_id >= sizeof(module_name)/sizeof(char *)) {
+	if (module_id >= sizeof(module_name) / sizeof(char *)) {
 		HISI_SNPRINTF(event->error_msg, "module=unknown(id=%hhu) ", module_id);
 		record_vendor_data(ev_decoder, HISI_OEM_DATA_TYPE_TEXT,
 				   HISI_COMMON_FIELD_MODULE_ID,
@@ -246,7 +246,7 @@ static void decode_module(struct ras_ns_ev_decoder *ev_decoder,
 }
 
 static void decode_hisi_common_section_hdr(struct ras_ns_ev_decoder *ev_decoder,
-					  const struct hisi_common_error_section *err,
+					   const struct hisi_common_error_section *err,
 					  struct hisi_event *event)
 {
 	HISI_SNPRINTF(event->error_msg, "[ table_version=%hhu", err->version);
@@ -341,6 +341,23 @@ static void decode_hisi_common_section_hdr(struct ras_ns_ev_decoder *ev_decoder,
 	HISI_SNPRINTF(event->error_msg, "]");
 }
 
+static int add_hisi_common_table(struct ras_events *ras,
+				 struct ras_ns_ev_decoder *ev_decoder)
+{
+#ifdef HAVE_SQLITE3
+	if (ras->record_events &&
+	    !ev_decoder->stmt_dec_record) {
+		if (ras_mc_add_vendor_table(ras, &ev_decoder->stmt_dec_record,
+					    &hisi_common_section_tab) != SQLITE_OK) {
+			log(TERM, LOG_WARNING, "Failed to create sql hisi_common_section_tab\n");
+			return -1;
+		}
+	}
+#endif
+
+	return 0;
+}
+
 static int decode_hisi_common_section(struct ras_events *ras,
 				      struct ras_ns_ev_decoder *ev_decoder,
 				      struct trace_seq *s,
@@ -350,29 +367,19 @@ static int decode_hisi_common_section(struct ras_events *ras,
 			(struct hisi_common_error_section *)event->error;
 	struct hisi_event hevent;
 
-#ifdef HAVE_SQLITE3
-	if (ras->record_events && !ev_decoder->stmt_dec_record) {
-		if (ras_mc_add_vendor_table(ras, &ev_decoder->stmt_dec_record,
-				&hisi_common_section_tab) != SQLITE_OK) {
-			trace_seq_printf(s, "create sql hisi_common_section_tab fail\n");
-			return -1;
-		}
-	}
-#endif
-
 	memset(&hevent, 0, sizeof(struct hisi_event));
 	trace_seq_printf(s, "\nHisilicon Common Error Section:\n");
 	decode_hisi_common_section_hdr(ev_decoder, err, &hevent);
 	trace_seq_printf(s, "%s\n", hevent.error_msg);
 
 	if (err->val_bits & BIT(HISI_COMMON_VALID_REG_ARRAY_SIZE) && err->reg_array_size > 0) {
-		int i;
+		unsigned int i;
 
 		trace_seq_printf(s, "Register Dump:\n");
 		for (i = 0; i < err->reg_array_size / sizeof(uint32_t); i++) {
-			trace_seq_printf(s, "reg%02d=0x%08x\n", i,
+			trace_seq_printf(s, "reg%02u=0x%08x\n", i,
 					 err->reg_array[i]);
-			HISI_SNPRINTF(hevent.reg_msg, "reg%02d=0x%08x",
+			HISI_SNPRINTF(hevent.reg_msg, "reg%02u=0x%08x",
 				      i, err->reg_array[i]);
 		}
 	}
@@ -392,13 +399,14 @@ static int decode_hisi_common_section(struct ras_events *ras,
 static struct ras_ns_ev_decoder hisi_section_ns_ev_decoder[]  = {
 	{
 		.sec_type = "c8b328a8-9917-4af6-9a13-2e08ab2e7586",
+		.add_table = add_hisi_common_table,
 		.decode = decode_hisi_common_section,
 	},
 };
 
 static void __attribute__((constructor)) hisi_ns_init(void)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < ARRAY_SIZE(hisi_section_ns_ev_decoder); i++)
 		register_ns_ev_decoder(&hisi_section_ns_ev_decoder[i]);
