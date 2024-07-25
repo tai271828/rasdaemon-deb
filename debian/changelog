@@ -1,3 +1,9 @@
+rasdaemon (0.8.1-1) unstable; urgency=medium
+
+  * New upstream version 0.8.1
+
+ -- Taihsiang Ho (tai271828) <e@tai271828.me>  Thu, 25 Jul 2024 16:42:27 +0200
+
 rasdaemon (0.8.0-2) unstable; urgency=medium
 
   * When running autopkgtest, use isolation-machine so we can skip tests
