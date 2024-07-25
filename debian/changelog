@@ -3,6 +3,7 @@ rasdaemon (0.8.1-1) unstable; urgency=medium
   * New upstream version 0.8.1
   * Remove patch 0001-Check-CPUs-online-not-configured.patch that has existed
     in upstream 0.8.1.
+  * Remove patch ras-mc-ctl.patch which is only used by 0.6.7 packaging.
 
  -- Taihsiang Ho (tai271828) <e@tai271828.me>  Thu, 25 Jul 2024 16:42:27 +0200
 
