@@ -5,6 +5,7 @@ rasdaemon (0.8.1-1) unstable; urgency=medium
     in upstream 0.8.1.
   * Remove patch ras-mc-ctl.patch which is only used by 0.6.7 packaging.
   * Enable all features by default rather than partially in the past.
+  * Apply the dh-sequence-movetousr workaround to #1059484
 
  -- Taihsiang Ho (tai271828) <e@tai271828.me>  Thu, 25 Jul 2024 16:42:27 +0200
 

@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Taihsiang Ho (tai271828) <e@tai271828.me>
 Uploaders: Russell Coker <russell@coker.com.au>
 Build-Depends: debhelper (>= 12), quilt, dh-exec,
+               dh-sequence-movetousr,
                autoconf,
                pkg-config,
                libsqlite3-dev, libgettextpo-dev,
