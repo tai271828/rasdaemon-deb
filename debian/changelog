@@ -1,3 +1,9 @@
+rasdaemon (0.8.1-2) unstable; urgency=medium
+
+  * d/control: d/rasdaemon.install: manual-move for DEP17 (Closes: #1073754)
+
+ -- Taihsiang Ho (tai271828) <e@tai271828.me>  Sat, 03 Aug 2024 21:48:15 +0200
+
 rasdaemon (0.8.1-1) unstable; urgency=medium
 
   * New upstream version 0.8.1
