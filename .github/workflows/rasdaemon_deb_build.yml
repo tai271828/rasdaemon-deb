@@ -1,0 +1,172 @@
+name: build-deb
+
+on:
+  push:
+  pull_request:
+
+env:
+  RELEASE: "sid"
+  CPU: "2"
+  MEMORY: "8GB"
+  DISK: "32GB"
+  USERNAME_IN_LXC: "tai"
+
+jobs:
+  Build_Deb_in_LXD_VM:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Variables
+        run: |
+          # workaround for variable substition in variable
+          # https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/variables#passing-values-between-steps-and-jobs-in-a-workflow
+          echo "VM=rasdaemon-${RELEASE}-vm-01" >> $GITHUB_ENV
+          echo "HOME_IN_LXC=/home/${USERNAME_IN_LXC}" >> $GITHUB_ENV
+          echo "LXC_CMD_PREFIX=su --login ${USERNAME_IN_LXC} -c" >> $GITHUB_ENV
+
+      - name: Launch VM Instance
+        run: |
+          echo ${RELEASE}
+          echo ${VM}
+          echo ${MEMORY}
+          echo ${USERNAME_IN_LXC}
+          echo ${HOME_IN_LXC}
+          echo ${LXC_CMD_PREFIX}
+          # remove docker in case it raises issues with lxd when accessing
+          # external world in a vm
+          sudo iptables -L
+          sudo iptables -I DOCKER-USER -i lxdbr0 -j ACCEPT
+          # this line may be unnecesasry
+          sudo iptables -I DOCKER-USER -o lxdbr0 -j ACCEPT
+          sudo iptables -L
+          sudo apt purge -y docker-ce docker-ce-cli
+          sudo snap refresh lxd --channel=latest/stable
+          sudo chmod o+g '/var/snap/lxd/common/lxd/unix.socket'
+          lxd init --auto
+
+          # collecting runner info
+          #
+          # default github action resource:
+          #
+          # Filesystem      Size  Used Avail Use% Mounted on
+          # /dev/root        73G   54G   19G  75% /
+          # tmpfs           7.9G  172K  7.9G   1% /dev/shm
+          # tmpfs           3.2G  1.1M  3.2G   1% /run
+          # tmpfs           5.0M     0  5.0M   0% /run/lock
+          # /dev/sda15      105M  6.1M   99M   6% /boot/efi
+          # /dev/sdb1        74G  4.1G   66G   6% /mnt
+          # tmpfs           1.6G   12K  1.6G   1% /run/user/1001
+          # tmpfs           1.0M     0  1.0M   0% /var/snap/lxd/common/ns
+          #                total        used        free      shared  buff/cache   available
+          # Mem:            15Gi       689Mi        13Gi        23Mi       1.8Gi        14Gi
+          # Swap:          4.0Gi          0B       4.0Gi
+          # The shell currently using:  /bin/bash
+          # Available CPU number: 4
+          df -h
+          free -hm
+          echo "The shell currently using: " ${SHELL}
+
+          echo "Available CPU number:" $(grep -c ^processor /proc/cpuinfo)
+          lxc profile show default
+          ip a
+
+          # tested with lxc 6.1-c14927a
+          lxc init images:debian/${RELEASE} ${VM} --vm -c limits.cpu=${CPU} -c limits.memory=${MEMORY} -d root,size=${DISK}
+          lxc config set ${VM} limits.cpu ${CPU}
+          lxc config set ${VM} limits.memory ${MEMORY}
+          lxc start ${VM}
+
+          sleep 30  # `lxc start` needs a `--wait`.
+
+          # collecting vm in the running info
+          echo "The disk size and ip a currently using in vm: "
+          lxc exec ${VM} -- df -h
+          lxc exec ${VM} -- ip a
+
+          lxc exec ${VM} -- apt update
+          lxc exec ${VM} -- apt install -y cloud-guest-utils e2fsprogs
+          lxc exec ${VM} -- growpart /dev/sda 2
+          lxc exec ${VM} -- resize2fs /dev/sda2
+
+          lxc exec ${VM} -- apt install -y git-buildpackage ubuntu-dev-tools debhelper
+          lxc exec ${VM} -- reboot
+
+          # check if the root partition is increased
+          sleep 30
+
+          echo "The disk size and shell currently using in vm: "
+          lxc exec ${VM} -- pwd
+          lxc exec ${VM} -- df -h
+          lxc exec ${VM} -- echo ${SHELL}
+
+          # begin to setup development env
+          # create normal user with sudo permission
+          lxc exec ${VM} -- adduser --disabled-password --comment "" ${USERNAME_IN_LXC}
+          lxc exec ${VM} -- adduser ${USERNAME_IN_LXC} sudo
+
+          echo "======================================================"
+          echo "The shell currently used in vm by ${USERNAME_IN_LXC}: "
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "echo ${SHELL}"
+          echo "======================================================"
+
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "git clone https://git.launchpad.net/~tai271828/+git/toolbox -b dev --depth 1 --recurse-submodules -j4"
+
+          lxc exec ${VM} -- ${HOME_IN_LXC}/toolbox/scripts/packaging-deb-00-prepare-04-sid-vm/func-setup-sudo-without-password.sh ${USERNAME_IN_LXC}
+
+      - name: Get Ready to Setup Testbed with LXD and QEMU Tools
+        run: |
+          # begin to setup autopkgtest
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/toolbox/scripts/packaging-deb-00-prepare-04-sid-vm/03-get-ready-to-use-autopkgtest-qemu-lxd.sh"
+
+          # make sure USER can run lxd lxc without sudo
+          lxc exec ${VM} -- snap services lxd
+          # snap service prefix is snap.
+          lxc exec ${VM} -- systemctl start snap.lxd.activate
+          lxc exec ${VM} -- systemctl start snap.lxd.daemon
+          lxc exec ${VM} -- systemctl start snap.lxd.user-daemon
+          lxc exec ${VM} -- snap services lxd
+          # hmmm this trick works rather than systemctl start
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "sudo usermod -a -G lxd ${USERNAME_IN_LXC}"
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "newgrp lxd"
+
+          # make sure USER can know the /snap/bin/lxd path
+          # make sure USER can have lxd group permission
+          echo "rebooting vm..."
+          lxc exec ${VM} -- reboot
+          sleep 30
+          echo "rebooted vm."
+
+          # get lxd-managed lxc command ready to use
+          lxc exec ${VM} -- lxd init --auto
+
+      - name: Setup Testbed - Autopkgtest LXD
+        run: |
+          # begin to build lxc testbed via lxd
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "echo 'building autopkgtest-build-lxd image...'"
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "autopkgtest-build-lxd images:debian/sid/amd64"
+
+      - name: Setup Testbed - Autopkgtest QEMU
+        run: |
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/toolbox/scripts/packaging-deb-00-prepare-04-sid-vm/03-get-ready-to-use-autopkgtest-qemu-lxd-01-setup-qemu-image.sh"
+
+      - name: Build Deb
+        run: |
+          # build rasdaemon deb
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/toolbox/scripts/packaging-deb-00-prepare-04-sid-vm/02-fetch-and-build-rasdaemon-deb-src.sh"
+
+      - name: Run Test - Autopkgtest LXD
+        # for rasdaemon
+        # 1. vm as testbed is expected
+        # 2. using autopkgtest in lxd-managed lxc will get return code 2
+        #
+        # man autopkgtest
+        # 2    at least one test was skipped (or at least one flaky test failed)
+        continue-on-error: true
+        run: |
+          # start testing with autopkgtest
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/toolbox/scripts/packaging-deb-00-prepare-04-sid-vm/04-run-autopkgtest-lxd.sh"
+
+      - name: Run Test - Autopkgtest QEMU
+        run: |
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/toolbox/scripts/packaging-deb-00-prepare-04-sid-vm/04-run-autopkgtest-qemu.sh"
+
