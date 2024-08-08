@@ -1,3 +1,9 @@
+rasdaemon (0.8.1-3) unstable; urgency=medium
+
+  * d/tests: update for Bug##1073754 to comply with DEP17
+
+ -- Taihsiang Ho (tai271828) <e@tai271828.me>  Thu, 08 Aug 2024 13:21:55 +0200
+
 rasdaemon (0.8.1-2) unstable; urgency=medium
 
   * d/control: d/rasdaemon.install: manual-move for DEP17 (Closes: #1073754)
