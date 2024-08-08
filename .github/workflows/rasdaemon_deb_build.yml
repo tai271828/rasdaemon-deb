@@ -166,7 +166,25 @@ jobs:
           # start testing with autopkgtest
           lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/toolbox/scripts/packaging-deb-00-prepare-04-sid-vm/04-run-autopkgtest-lxd.sh"
 
+          echo
+          echo "=================================================================================================================="
+          echo "rasdaemon autopkgtest expects isolation-machine. That's to say, lxd based autopkgtest will fail for return code 2:"
+          echo "man autopkgtest: 2    at least one test was skipped (or at least one flaky test failed)"
+          echo
+          echo "Dont worry if this step fail for error code 2"
+          echo "=================================================================================================================="
+          echo
+
       - name: Run Test - Autopkgtest QEMU
         run: |
           lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/toolbox/scripts/packaging-deb-00-prepare-04-sid-vm/04-run-autopkgtest-qemu.sh"
+
+          echo
+          echo "=================================================================================================================="
+          echo "rasdaemon autopkgtest has a known issue with QEMU based test."
+          echo "See Bug#1071456 https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1071456"
+          echo
+          echo "Dont worry if this step fail for timeout raised by 6.8 kernel in the QEMU VM instance."
+          echo "=================================================================================================================="
+          echo
 
