@@ -71,12 +71,14 @@ jobs:
           ip a
 
           # tested with lxc 6.1-c14927a
-          lxc init images:debian/${RELEASE} ${VM} --vm -c limits.cpu=${CPU} -c limits.memory=${MEMORY} -d root,size=${DISK}
+          lxc init images:debian/${RELEASE} ${VM} --vm -c limits.cpu=${CPU} -c limits.memory=${MEMORY} -d root,size=${DISK} -c security.secureboot=false
           lxc config set ${VM} limits.cpu ${CPU}
           lxc config set ${VM} limits.memory ${MEMORY}
           lxc start ${VM}
 
+          echo "booting vm..."
           sleep 30  # `lxc start` needs a `--wait`.
+          echo "booted vm."
 
           # collecting vm in the running info
           echo "The disk size and ip a currently using in vm: "
@@ -89,10 +91,12 @@ jobs:
           lxc exec ${VM} -- resize2fs /dev/sda2
 
           lxc exec ${VM} -- apt install -y git-buildpackage ubuntu-dev-tools debhelper
-          lxc exec ${VM} -- reboot
 
           # check if the root partition is increased
+          echo "rebooting vm..."
+          lxc exec ${VM} -- reboot
           sleep 30
+          echo "rebooted vm."
 
           echo "The disk size and shell currently using in vm: "
           lxc exec ${VM} -- pwd
@@ -176,6 +180,10 @@ jobs:
           echo
 
       - name: Run Test - Autopkgtest QEMU
+        # rasdaemon autopkgtest has a known issue with QEMU based test.
+        # See Bug#1071456 https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1071456
+        # at this moment let us just ignore the failure until the kernel is updated.
+        continue-on-error: true
         run: |
           lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/toolbox/scripts/packaging-deb-00-prepare-04-sid-vm/04-run-autopkgtest-qemu.sh"
 
@@ -187,4 +195,53 @@ jobs:
           echo "Dont worry if this step fail for timeout raised by 6.8 kernel in the QEMU VM instance."
           echo "=================================================================================================================="
           echo
+
+      #- name: Setup Testbed - Bare Metal and Linux Kernel with Debugfs Enabled
+      #  run: |
+      #    lxc exec ${VM} -- apt install wireless-regdb
+      #    lxc exec ${VM} -- wget https://people.canonical.com/~taihsiang/rasdaemon-amd64/linux-debugfs-enabled/linux-image-unsigned-5.15.0-27-generic_5.15.0-27.28~d20220513t004517~ab2e786e8b1e_amd64.deb
+      #    lxc exec ${VM} -- wget https://people.canonical.com/~taihsiang/rasdaemon-amd64/linux-debugfs-enabled/linux-modules-5.15.0-27-generic_5.15.0-27.28~d20220513t004517~ab2e786e8b1e_amd64.deb
+      #    lxc exec ${VM} -- wget https://people.canonical.com/~taihsiang/rasdaemon-amd64/linux-debugfs-enabled/linux-modules-extra-5.15.0-27-generic_5.15.0-27.28~d20220513t004517~ab2e786e8b1e_amd64.deb
+      #    lxc exec ${VM} -- dpkg -i linux-image-unsigned-5.15.0-27-generic_5.15.0-27.28~d20220513t004517~ab2e786e8b1e_amd64.deb linux-modules-5.15.0-27-generic_5.15.0-27.28~d20220513t004517~ab2e786e8b1e_amd64.deb linux-modules-extra-5.15.0-27-generic_5.15.0-27.28~d20220513t004517~ab2e786e8b1e_amd64.deb
+      #    lxc exec ${VM} -- uname -a
+
+      #    lxc exec ${VM} -- bash -c "awk -F\' '/menuentry / {print $2}' /boot/grub/grub.cfg"
+      #    lxc exec ${VM} -- bash -c "grub-reboot '1>2'"
+
+      #    # make the new kernel take effect
+      #    echo "rebooting vm..."
+      #    lxc exec ${VM} -- reboot
+      #    sleep 60
+      #    echo "rebooted vm."
+
+      #    #lxc exec ${VM} -- sudo modprobe i7core_edac
+      #    #lxc exec ${VM} -- sudo modprobe amd64_edac_mod
+      #    #lxc exec ${VM} -- sudo modprobe i82801ca_edac
+
+      #    lxc exec ${VM} -- bash -c "sudo dmesg | grep -i EDAC"
+      #    # just dump debugging info. do not stop if nothing is found
+      #    lxc exec ${VM} -- bash -c "lsmod | grep -i EDAC; true"
+      #    lxc exec ${VM} -- ls /sys/devices/system/edac/mc
+      #    # at this moment, I do not expect there is such fs enabled
+      #    lxc exec ${VM} -- bash -c "ls /sys/kernel/debug/edac/; true"
+      #    lxc exec ${VM} -- uname -a
+
+      - name: Functional Testing
+        run: |
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c 'echo ${HOME}/workspace-rasdaemon-deb/'
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c 'ls ${HOME}/workspace-rasdaemon-deb/'
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c 'sudo apt install -y ${HOME}/workspace-rasdaemon-deb/rasdaemon_*_amd64.deb'
+
+          lxc exec ${VM} -- bash -c 'echo "deb-src http://deb.debian.org/debian/ sid main" | tee -a /etc/apt/sources.list'
+          lxc exec ${VM} -- bash -c 'apt update; apt install -y git make kmod dpkg-dev linux-headers-6.10.3-common linux-headers-6.10.3-amd64'
+          lxc exec ${VM} -- ${HOME_IN_LXC}/toolbox/scripts/packaging-deb-rasdaemon/build-run-fake-edac-ko-sid-02-build-run.sh
+          # still WIP
+          #lxc exec ${VM} -- ${HOME_IN_LXC}/toolbox/scripts/packaging-deb-rasdaemon/run-test_02-inject-fake-events.sh
+          lxc exec ${VM} -- ras-mc-ctl --summary
+          lxc exec ${VM} -- ras-mc-ctl --errors
+          lxc exec ${VM} -- ras-mc-ctl --status
+          lxc exec ${VM} -- systemctl is-active --quiet rasdaemon
+          lxc exec ${VM} -- ${HOME_IN_LXC}/toolbox/scripts/packaging-deb-rasdaemon/run-test_01-show-general-info.sh
+          # single quote matters to ensure the cat command is interpretered at the right stage.
+          lxc exec ${VM} -- bash -c 'echo mc_name is: $(sudo cat /sys/devices/system/edac/mc/mc0/mc_name)'
 
