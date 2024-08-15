@@ -14,7 +14,7 @@ env:
   USERNAME_IN_LXC: "tai"
 
 jobs:
-  01_VERIFICATION_LOCAL_ENV_Build_Deb_in_LXD_VM:
+  VERIFICATION_01_LOCAL_ENV_Build_Deb_in_LXD_VM:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -222,7 +222,7 @@ jobs:
       #    lxc exec ${VM} -- bash -c "ls /sys/kernel/debug/edac/; true"
       #    lxc exec ${VM} -- uname -a
 
-  02_VERIFICATION_LXC_Build_Deb_in_LXD_VM:
+  VERIFICATION_02_LXC_Build_Deb_in_LXD_VM:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -405,7 +405,7 @@ jobs:
           echo "=================================================================================================================="
           echo
 
-  03_VERIFICATION_QEMU_Build_Deb_in_LXD_VM:
+  VERIFICATION_03_QEMU_Build_Deb_in_LXD_VM:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
