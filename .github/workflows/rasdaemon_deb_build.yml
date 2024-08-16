@@ -223,6 +223,10 @@ jobs:
           echo "=================================================================================================================="
           echo "rasdaemon autopkgtest has a known issue with QEMU based test."
           echo "See Bug#1071456 https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1071456"
+          echo "  - autopkgtest workaround released: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1071456"
+          echo "  - corresponding kernel issue reported to Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1072004"
+          echo "  - corresponding kernel issue reported to Launchpad / Ubuntu: https://bugs.launchpad.net/ubuntu/+source/autopkgtest/+bug/2056461"
+          echo "  - corresponding kernel issue reported to Linux: https://bugzilla.kernel.org/show_bug.cgi?id=218916"
           echo
           echo "Dont worry if this step fail for timeout raised by 6.8 kernel in the QEMU VM instance."
           echo "=================================================================================================================="
