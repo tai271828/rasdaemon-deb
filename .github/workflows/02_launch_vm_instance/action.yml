@@ -1,0 +1,114 @@
+name: build-deb-in-vm
+
+runs:
+  using: "composite"
+  steps:
+    - name: Launch VM Instance
+      shell: bash
+      run: |
+        echo ${RELEASE}
+        echo ${VM}
+        echo ${MEMORY}
+        echo ${USERNAME_IN_LXC}
+        echo ${HOME_IN_LXC}
+        echo ${LXC_CMD_PREFIX}
+        # remove docker in case it raises issues with lxd when accessing
+        # external world in a vm
+        sudo iptables -L
+        sudo iptables -I DOCKER-USER -i lxdbr0 -j ACCEPT
+        # this line may be unnecesasry
+        sudo iptables -I DOCKER-USER -o lxdbr0 -j ACCEPT
+        sudo iptables -L
+        sudo apt purge -y docker-ce docker-ce-cli
+        sudo snap refresh lxd --channel=latest/stable
+        sudo chmod o+g '/var/snap/lxd/common/lxd/unix.socket'
+        lxd init --auto
+
+        # collecting runner info
+        #
+        # default github action resource:
+        #
+        # Filesystem      Size  Used Avail Use% Mounted on
+        # /dev/root        73G   54G   19G  75% /
+        # tmpfs           7.9G  172K  7.9G   1% /dev/shm
+        # tmpfs           3.2G  1.1M  3.2G   1% /run
+        # tmpfs           5.0M     0  5.0M   0% /run/lock
+        # /dev/sda15      105M  6.1M   99M   6% /boot/efi
+        # /dev/sdb1        74G  4.1G   66G   6% /mnt
+        # tmpfs           1.6G   12K  1.6G   1% /run/user/1001
+        # tmpfs           1.0M     0  1.0M   0% /var/snap/lxd/common/ns
+        #
+        #                total        used        free      shared  buff/cache   available
+        # Mem:            15Gi       689Mi        13Gi        23Mi       1.8Gi        14Gi
+        # Swap:          4.0Gi          0B       4.0Gi
+        #
+        # The shell currently using:  /bin/bash
+        #
+        # Available CPU number: 4
+        df -h
+        free -hm
+        echo "The shell currently using: " ${SHELL}
+        echo "Available CPU number:" $(grep -c ^processor /proc/cpuinfo)
+        lxc profile show default
+        ip a
+
+        # tested with lxc 6.1-c14927a
+        lxc init images:debian/${RELEASE} ${VM} --vm -c limits.cpu=${CPU} -c limits.memory=${MEMORY} -d root,size=${DISK} -c security.secureboot=false
+        lxc config set ${VM} limits.cpu ${CPU}
+        lxc config set ${VM} limits.memory ${MEMORY}
+        lxc start ${VM}
+
+        echo "booting vm..."
+        sleep 30  # `lxc start` needs a `--wait`.
+        echo "booted vm."
+
+        # collecting vm in the running info
+        echo "The disk size and ip a currently using in vm: "
+        lxc exec ${VM} -- df -h
+        lxc exec ${VM} -- ip a
+
+        lxc exec ${VM} -- apt update
+        lxc exec ${VM} -- apt install -y cloud-guest-utils e2fsprogs
+        lxc exec ${VM} -- growpart /dev/sda 2
+        lxc exec ${VM} -- resize2fs /dev/sda2
+
+        lxc exec ${VM} -- apt install -y git-buildpackage ubuntu-dev-tools debhelper
+
+        # check if the root partition is increased
+        echo "rebooting vm..."
+        lxc exec ${VM} -- reboot
+        sleep 30
+        echo "rebooted vm."
+
+        echo "The disk size and shell currently using in vm: "
+        lxc exec ${VM} -- pwd
+        lxc exec ${VM} -- df -h
+        lxc exec ${VM} -- echo ${SHELL}
+
+        # begin to setup development env
+        # create normal user with sudo permission
+        lxc exec ${VM} -- adduser --disabled-password --comment "" ${USERNAME_IN_LXC}
+        lxc exec ${VM} -- adduser ${USERNAME_IN_LXC} sudo
+
+        echo "======================================================"
+        echo "The shell currently used in vm by ${USERNAME_IN_LXC}: "
+        lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "echo ${SHELL}"
+        echo "======================================================"
+
+        #echo ${GITHUB_WORKSPACE}
+        #ls ${GITHUB_WORKSPACE}
+        #ls -alhd ${GITHUB_WORKSPACE}
+        #echo ${REPO_NAME}
+        lxc file push -r ${GITHUB_WORKSPACE} ${VM}/home/${USERNAME_IN_LXC}/
+        #lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "ls ./"
+        #lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "ls ${REPO_NAME}"
+        #lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "pwd"
+
+        lxc exec ${VM} -- ${HOME_IN_LXC}/${REPO_NAME}/debian/tools/func-setup-sudo-without-password.sh ${USERNAME_IN_LXC}
+
+    - name: Build Deb
+      shell: bash
+      run: |
+        # build rasdaemon deb
+        lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/${REPO_NAME}/debian/tools/02-fetch-and-build-rasdaemon-deb-src.sh"
+
