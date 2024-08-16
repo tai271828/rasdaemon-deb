@@ -176,22 +176,10 @@ jobs:
       - name: Get Ready to Setup Testbed with QEMU Tools
         run: |
           # begin to setup autopkgtest
-          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/${REPO_NAME}/debian/tools/03-get-ready-to-use-autopkgtest-qemu-lxd.sh"
-
-          # make sure USER can run lxd lxc without sudo
-          lxc exec ${VM} -- snap services lxd
-          # snap service prefix is snap.
-          lxc exec ${VM} -- systemctl start snap.lxd.activate
-          lxc exec ${VM} -- systemctl start snap.lxd.daemon
-          lxc exec ${VM} -- systemctl start snap.lxd.user-daemon
-          lxc exec ${VM} -- snap services lxd
-          # hmmm this trick works rather than systemctl start
-          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "sudo usermod -a -G lxd ${USERNAME_IN_LXC}"
-          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "newgrp lxd"
+          lxc exec ${VM} -- apt update
+          lxc exec ${VM} -- apt install -y autopkgtest qemu-system-x86 vmdb2 cpu-checker
 
           echo "checking /dev/kvm read/write permission..."
-          lxc exec ${VM} -- apt update
-          lxc exec ${VM} -- apt install -y cpu-checker
           lxc exec ${VM} -- kvm-ok
           lxc exec ${VM} -- adduser ${USERNAME_IN_LXC} kvm
           lxc exec ${VM} -- kvm-ok
@@ -203,9 +191,6 @@ jobs:
           lxc exec ${VM} -- reboot
           sleep 30
           echo "rebooted vm."
-
-          # get lxd-managed lxc command ready to use
-          lxc exec ${VM} -- lxd init --auto
 
       - name: Setup Testbed - Autopkgtest QEMU
         run: |
@@ -231,3 +216,4 @@ jobs:
           echo "Dont worry if this step fail for timeout raised by 6.8 kernel in the QEMU VM instance."
           echo "=================================================================================================================="
           echo
+
