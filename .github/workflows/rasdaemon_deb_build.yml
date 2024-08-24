@@ -3,6 +3,9 @@ name: build-deb-and-autopkgtest
 on:
   push:
   pull_request:
+  schedule:
+    # run on every Sunday 4:00 UTC+2
+    - cron: "0 2 * * 0"
 
 env:
   # in 2024 Aug, Github Action provides 4 cores / 16G memory / 19G disk
