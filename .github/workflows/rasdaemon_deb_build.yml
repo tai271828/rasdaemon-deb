@@ -46,7 +46,7 @@ jobs:
         run: |
           lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c 'echo ${HOME}/workspace-rasdaemon-deb/'
           lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c 'ls ${HOME}/workspace-rasdaemon-deb/'
-          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c 'sudo apt install -y ${HOME}/workspace-rasdaemon-deb/rasdaemon_*_amd64.deb'
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c 'sudo apt install -y --allow-downgrades ${HOME}/workspace-rasdaemon-deb/rasdaemon_*_amd64.deb'
 
           lxc exec ${VM} -- bash -c 'echo "deb-src http://deb.debian.org/debian/ sid main" | tee -a /etc/apt/sources.list'
           lxc exec ${VM} -- bash -c 'apt update; apt install -y git make kmod dpkg-dev linux-headers-amd64'
