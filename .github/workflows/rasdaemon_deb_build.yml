@@ -135,7 +135,9 @@ jobs:
           echo "rebooted vm."
 
           # get lxd-managed lxc command ready to use
+          echo "lxd init auto"
           lxc exec ${VM} -- lxd init --auto
+          echo "lxd init auto. Done."
 
       - name: Setup Testbed - Autopkgtest LXD
         run: |
@@ -143,6 +145,13 @@ jobs:
           lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "echo 'building autopkgtest-build-lxd image...'"
           # dependency required since 2024 Aug 13
           lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "sudo apt update; sudo apt install -y dnsmasq"
+          # around Oct 2024 it started showing:
+          # Error: Failed instance creation: Failed creating instance record: Failed initialising instance: Invalid devices: Failed detecting root disk device: No root device could be found
+          echo "Applying no root device workaround"
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "lxd init --auto"
+          echo ""
+          echo "Everything should be ready. Invoking autopkgtest-build-lxd..."
+          echo ""
           lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "autopkgtest-build-lxd images:debian/sid/amd64"
 
       - name: Run Test - Autopkgtest LXD
