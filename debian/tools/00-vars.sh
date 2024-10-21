@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034
 readonly DEFAULT_DEBIAN_RELEASE=sid
 readonly DEB_NAME=rasdaemon
 readonly DEB_VERSION="0.8.1-3"

@@ -95,6 +95,11 @@ runs:
         lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "echo ${SHELL}"
         echo "======================================================"
 
+        echo "${USERNAME_IN_LXC} ALL=(ALL:ALL) NOPASSWD: ALL" > ${USERNAME_IN_LXC}-sudoer
+        lxc file push ${USERNAME_IN_LXC}-sudoer ${VM}/etc/sudoers.d/
+
+        lxc exec ${VM} -- chown root:root /etc/sudoers.d/${USERNAME_IN_LXC}-sudoer
+
         #echo ${GITHUB_WORKSPACE}
         #ls ${GITHUB_WORKSPACE}
         #ls -alhd ${GITHUB_WORKSPACE}

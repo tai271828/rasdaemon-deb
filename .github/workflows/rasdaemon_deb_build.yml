@@ -5,7 +5,7 @@ on:
   pull_request:
   schedule:
     # run on every Sunday 4:00 UTC+2
-    - cron: "0 3 * * 0"
+    - cron: "15-45 1-23/12 * * *"
 
 env:
   # in 2024 Aug, Github Action provides 4 cores / 16G memory / 19G disk
@@ -135,7 +135,12 @@ jobs:
           echo "rebooted vm."
 
           # get lxd-managed lxc command ready to use
+          echo "lxd init auto"
           lxc exec ${VM} -- lxd init --auto
+          echo "lxd init auto. Done."
+
+          #lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/${REPO_NAME}/debian/tools/func-dump-debug-info-lxd.sh"
+
 
       - name: Setup Testbed - Autopkgtest LXD
         run: |
@@ -143,7 +148,23 @@ jobs:
           lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "echo 'building autopkgtest-build-lxd image...'"
           # dependency required since 2024 Aug 13
           lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "sudo apt update; sudo apt install -y dnsmasq"
+
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "export USERNAME_IN_LXC=${USERNAME_IN_LXC} VM=${VM} HOME_IN_LXC=${HOME_IN_LXC} REPO_NAME=${REPO_NAME}; ${HOME_IN_LXC}/${REPO_NAME}/debian/tools/workaround-lxc-default-root-disk.sh"
+
+          echo "rebooting vm..."
+          sleep 30
+          lxc exec ${VM} -- reboot
+          sleep 30
+          echo "rebooted vm."
+
+          echo ""
+          echo "Everything should be ready. Invoking autopkgtest-build-lxd..."
+          echo ""
+          #lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/${REPO_NAME}/debian/tools/func-dump-debug-info-lxd.sh"
+          lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "lxc list"
+          #lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/${REPO_NAME}/debian/tools/func-dump-debug-info-lxd.sh"
           lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "autopkgtest-build-lxd images:debian/sid/amd64"
+          #lxc exec ${VM} -- su --login ${USERNAME_IN_LXC} -c "${HOME_IN_LXC}/${REPO_NAME}/debian/tools/func-dump-debug-info-lxd.sh"
 
       - name: Run Test - Autopkgtest LXD
         # for rasdaemon
