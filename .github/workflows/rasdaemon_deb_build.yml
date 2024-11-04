@@ -5,7 +5,7 @@ on:
   pull_request:
   schedule:
     # run on every Sunday 4:00 UTC+2
-    - cron: "15-45 1-23/12 * * *"
+    - cron: "37 1-23/12 * * *"
 
 env:
   # in 2024 Aug, Github Action provides 4 cores / 16G memory / 19G disk
