@@ -1,20 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 /*
- * Copyright (C) 2013 Mauro Carvalho Chehab <mchehab+redhat@kernel.org>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-*/
+ * Copyright (C) 2013 Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
+ */
 
 #include <argp.h>
 #include <stdio.h>
@@ -22,9 +10,10 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "ras-record.h"
-#include "ras-logger.h"
 #include "ras-events.h"
+#include "ras-logger.h"
+#include "ras-record.h"
+#include "types.h"
 
 /*
  * Arguments(argp) handling logic and main
@@ -34,7 +23,6 @@
 #define TOOL_DESCRIPTION "RAS daemon to log the RAS events."
 #define ARGS_DOC "<options>"
 #define DISABLE "DISABLE"
-char *choices_disable;
 
 const char *argp_program_version = TOOL_NAME " " VERSION;
 const char *argp_program_bug_address = "Mauro Carvalho Chehab <mchehab@kernel.org>";
@@ -42,6 +30,7 @@ const char *argp_program_bug_address = "Mauro Carvalho Chehab <mchehab@kernel.or
 struct arguments {
 	int record_events;
 	int enable_ras;
+	int enable_ipmitool;
 	int foreground;
 	int offline;
 };
@@ -72,6 +61,11 @@ static error_t parse_opt(int k, char *arg, struct argp_state *state)
 #ifdef HAVE_SQLITE3
 	case 'r':
 		args->record_events++;
+		break;
+#endif
+#ifdef HAVE_OPENBMC_UNIFIED_SEL
+	case 'i':
+		args->enable_ipmitool++;
 		break;
 #endif
 	case 'f':
@@ -164,6 +158,9 @@ int main(int argc, char *argv[])
 		{"record",  'r', 0, 0, "record events via sqlite3", 0},
 #endif
 		{"foreground", 'f', 0, 0, "run foreground, not daemonize"},
+#ifdef HAVE_OPENBMC_UNIFIED_SEL
+		{"ipmitool", 'i', 0, 0, "enable ipmitool logging", 0},
+#endif
 #ifdef HAVE_MCE
 		{"post-processing", 'p', 0, 0,
 		"Post-processing MCE's with raw register values"},
@@ -212,7 +209,7 @@ int main(int argc, char *argv[])
 		if (daemon(0, 0))
 			exit(EXIT_FAILURE);
 
-	handle_ras_events(args.record_events);
+	handle_ras_events(args.record_events, args.enable_ipmitool);
 
 	return 0;
 }

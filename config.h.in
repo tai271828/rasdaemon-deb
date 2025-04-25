@@ -51,8 +51,14 @@
 /* "have memory failure events collect" */
 #undef HAVE_MEMORY_FAILURE
 
+/* "have memory row corrected error predictive failure analysis" */
+#undef HAVE_MEMORY_ROW_CE_PFA
+
 /* "have UNKNOWN_SEC events collect" */
 #undef HAVE_NON_STANDARD
+
+/* "have OpenBMC unified SEL" */
+#undef HAVE_OPENBMC_UNIFIED_SEL
 
 /* "have sqlite3" */
 #undef HAVE_SQLITE3
@@ -141,7 +147,7 @@
 /* ras events database */
 #undef RAS_DB_FNAME
 
-/* Define to 1 if all of the C90 standard headers exist (not just the ones
+/* Define to 1 if all of the C89 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
    backward compatibility; new code need not use it. */
 #undef STDC_HEADERS

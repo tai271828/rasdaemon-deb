@@ -1,31 +1,18 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2013 Mauro Carvalho Chehab <mchehab+redhat@kernel.org>
+ * Copyright (C) 2013 Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
  *
- * The code below were adapted from Andi Kleen/Intel/SuSe mcelog code,
- * released under GNU Public General License, v.2
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-*/
+ * The code below were adapted from Andi Kleen/Intel/SUSE mcelog code,
+ * released under GNU Public General License, v.2.
+ */
 
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
-#include "ras-mce-handler.h"
 #include "bitfield.h"
+#include "ras-mce-handler.h"
 
-unsigned int bitfield_msg(char *buf, size_t len, const char **bitarray,
+unsigned int bitfield_msg(char *buf, size_t len, const char * const *bitarray,
 			  unsigned int array_len,
 			  unsigned int bit_offset, unsigned int ignore_bits,
 			  uint64_t status)
@@ -86,8 +73,9 @@ void decode_bitfield(struct mce_event *e, uint64_t status,
 				continue;
 			mce_snprintf(e->error_msg, "<%u:%llx>",
 				     f->start_bit, (long long)v);
-		} else
+		} else {
 			mce_snprintf(e->error_msg, "%s", s);
+		}
 	}
 }
 

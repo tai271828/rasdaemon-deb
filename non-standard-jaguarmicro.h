@@ -1,18 +1,15 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+
 /*
  * Copyright (c) 2023, JaguarMicro
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
  */
 
 #ifndef __NON_STANDARD_JAGUAR_H
 #define __NON_STANDARD_JAGUAR_H
 
-#include "ras-events.h"
 #include <traceevent/event-parse.h>
+
+#include "ras-events.h"
 #include "ras-mce-handler.h"
 
 #define PAYLOAD_TYPE_0         0x00
@@ -75,7 +72,7 @@ struct jm_payload0_type_sec {
 	uint32_t ecc_misc0_high32;
 	uint32_t ecc_misc1_low32;
 	uint32_t ecc_misc1_high32;
-	uint32_t ecc_misc2_Low32;
+	uint32_t ecc_misc2_low32;
 	uint32_t ecc_misc2_high32;
 
 	struct jm_common_sec_tail common_tail;

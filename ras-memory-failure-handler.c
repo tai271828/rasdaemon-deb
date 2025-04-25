@@ -1,17 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 /*
  * Copyright (c) Huawei Technologies Co., Ltd. 2020. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  */
 
+#define _GNU_SOURCE
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,9 +12,9 @@
 
 #include "ras-logger.h"
 #include "ras-memory-failure-handler.h"
-#include "ras-record.h"
 #include "ras-report.h"
 #include "trigger.h"
+#include "types.h"
 
 /* Memory failure - various types of pages */
 enum mf_action_page_type {
@@ -197,12 +190,12 @@ int ras_memory_failure_event_handler(struct trace_seq *s,
 		strftime(ev.timestamp, sizeof(ev.timestamp),
 			 "%Y-%m-%d %H:%M:%S %z", tm);
 	else
-		strncpy(ev.timestamp, "1970-01-01 00:00:00 +0000", sizeof(ev.timestamp));
+		strscpy(ev.timestamp, "1970-01-01 00:00:00 +0000", sizeof(ev.timestamp));
 	trace_seq_printf(s, "%s ", ev.timestamp);
 
 	if (tep_get_field_val(s,  event, "pfn", record, &val, 1) < 0)
 		return -1;
-	sprintf(ev.pfn, "0x%llx", val);
+	snprintf(ev.pfn, sizeof(ev.pfn), "0x%llx", val);
 	trace_seq_printf(s, "pfn=0x%llx ", val);
 
 	if (tep_get_field_val(s, event, "type", record, &val, 1) < 0)

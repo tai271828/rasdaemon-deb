@@ -1,11 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+
 /*
  * Copyright (C) 2023 Alibaba Inc
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
  */
 
 #ifndef __NON_STANDARD_YITIAN_H
@@ -13,6 +9,8 @@
 
 #include "ras-events.h"
 #include "traceevent/event-parse.h"
+
+struct ras_ns_ev_decoder;
 
 #define YITIAN_RAS_TYPE_DDR		0x50
 

@@ -1,30 +1,21 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 /*
- * Copyright (C) 2013 Mauro Carvalho Chehab <mchehab+redhat@kernel.org>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-*/
+ * Copyright (C) 2013 Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <traceevent/kbuffer.h>
-#include "ras-aer-handler.h"
-#include "ras-record.h"
-#include "ras-logger.h"
+#include <unistd.h>
+
 #include "bitfield.h"
+#include "ras-aer-handler.h"
+#include "ras-logger.h"
 #include "ras-report.h"
+#include "unified-sel.h"
+#include "types.h"
 
 /* bit field meaning for correctable error */
 static const char *aer_cor_errors[32] = {
@@ -36,12 +27,14 @@ static const char *aer_cor_errors[32] = {
 	[12] = "Replay Timer Timeout",
 	[13] = "Advisory Non-Fatal",
 	[14] = "Corrected Internal Error",
+	[15] = "Header Log Overflow",
 };
 
 /* bit field meaning for uncorrectable error */
 static const char *aer_uncor_errors[32] = {
 	/* Uncorrectable errors */
 	[4]  = "Data Link Protocol",
+	[5]  = "Surprise Link Down",
 	[12] = "Poisoned TLP",
 	[13] = "Flow Control Protocol",
 	[14] = "Completion Timeout",
@@ -51,7 +44,22 @@ static const char *aer_uncor_errors[32] = {
 	[18] = "Malformed TLP",
 	[19] = "ECRC",
 	[20] = "Unsupported Request",
+	[21] = "ACS Violation",
+	[22] = "Uncorrected Internal",
+	[23] = "MC Blocked TLP",
+	[24] = "AtomicOp Egress Blocked",
+	[25] = "TLP Prefix Blocked",
+	[26] = "Poisoned TLP Egrees Blocked",
 };
+
+static bool use_ipmitool = false;
+
+void ras_aer_handler_init(int enable_ipmitool)
+{
+#ifdef HAVE_OPENBMC_UNIFIED_SEL
+	use_ipmitool = (enable_ipmitool > 0) ? 1 : 0;
+#endif
+}
 
 #define BUF_LEN	1024
 
@@ -173,26 +181,33 @@ int ras_aer_event_handler(struct trace_seq *s,
 	/*
 	 * Get PCIe AER error source seg/bus/dev/fn and save it into
 	 * BMC OEM SEL, ipmitool raw 0x0a 0x44 is IPMI command-Add SEL
-	 * entry, please refer IPMI specificaiton chapter 31.6. 0xcd3a
+	 * entry, please refer IPMI specification chapter 31.6. 0xcd3a
 	 * is manufactuer ID(ampere),byte 12 is sensor num(CE is 0xBF,
 	 * UE is 0xCA), byte 13~14 is segment number, byte 15 is bus
 	 * number, byte 16[7:3] is device number, byte 16[2:0] is
 	 * function number
 	 */
-	sscanf(ev.dev_name, "%x:%x:%x.%x", &seg, &bus, &dev, &fn);
+	rc = sscanf(ev.dev_name, "%x:%x:%x.%x", &seg, &bus, &dev, &fn);
+	if (rc == 4) {
+		sel_data[1] = seg & 0xff;
+		sel_data[2] = (seg & 0xff00) >> 8;
+		sel_data[3] = bus;
+		sel_data[4] = (((dev & 0x1f) << 3) | (fn & 0x7));
 
-	sel_data[1] = seg & 0xff;
-	sel_data[2] = (seg & 0xff00) >> 8;
-	sel_data[3] = bus;
-	sel_data[4] = (((dev & 0x1f) << 3) | (fn & 0x7));
+		snprintf(ipmi_add_sel, sizeof(ipmi_add_sel),
+			 "ipmitool raw 0x0a 0x44 0x00 0x00 0xc0 0x00 0x00 0x00 0x00 0x3a 0xcd 0x00 0xc0 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+			 sel_data[0], sel_data[1], sel_data[2], sel_data[3], sel_data[4]);
 
-	sprintf(ipmi_add_sel,
-		"ipmitool raw 0x0a 0x44 0x00 0x00 0xc0 0x00 0x00 0x00 0x00 0x3a 0xcd 0x00 0xc0 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
-	  sel_data[0], sel_data[1], sel_data[2], sel_data[3], sel_data[4]);
-
-	rc = system(ipmi_add_sel);
+		rc = system(ipmi_add_sel);
+	}
 	if (rc)
 		log(SYSLOG, LOG_WARNING, "Failed to execute ipmitool\n");
+#endif
+
+#ifdef HAVE_OPENBMC_UNIFIED_SEL
+	if (use_ipmitool)
+		if (openbmc_unified_sel_log(severity_val, ev.dev_name, status_val) < 0)
+			return -1;
 #endif
 
 	return 0;

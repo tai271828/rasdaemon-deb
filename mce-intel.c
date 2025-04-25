@@ -1,35 +1,23 @@
+// SPDX-License-Identifier: GPL-2.0
+
 /*
- * Copyright (C) 2013 Mauro Carvalho Chehab <mchehab+redhat@kernel.org>
+ * Copyright (C) 2013 Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
  *
- * The code below were adapted from Andi Kleen/Intel/SuSe mcelog code,
+ * The code below were adapted from Andi Kleen/Intel/SUSE mcelog code,
  * released under GNU Public General License, v.2
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-*/
+ */
 
 #include <errno.h>
 #include <fcntl.h>
-#include <string.h>
 #include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
+#include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
+#include "bitfield.h"
 #include "ras-logger.h"
 #include "ras-mce-handler.h"
-#include "bitfield.h"
 
 #define MCE_THERMAL_BANK	(MCE_EXTENDED_BANK + 0)
 #define MCE_TIMEOUT_BANK        (MCE_EXTENDED_BANK + 90)
@@ -151,9 +139,9 @@ static void decode_memory_controller(struct mce_event *e, uint32_t status)
 	char channel[30];
 
 	if ((status & 0xf) == 0xf)
-		sprintf(channel, "unspecified");
+		snprintf(channel, sizeof(channel), "unspecified");
 	else
-		sprintf(channel, "%u", status & 0xf);
+		snprintf(channel, sizeof(channel), "%u", status & 0xf);
 
 	mce_snprintf(e->error_msg, "MEMORY CONTROLLER %s_CHANNEL%s_ERR",
 		     mmm_mnemonic[(status >> 4) & 7], channel);
@@ -164,10 +152,15 @@ static void decode_memory_controller(struct mce_event *e, uint32_t status)
 static void decode_termal_bank(struct mce_event *e)
 {
 	if (e->status & 1) {
-		mce_snprintf(e->mcgstatus_msg, "Processor %d heated above trip temperature. Throttling enabled.", e->cpu);
-		mce_snprintf(e->user_action, "Please check your system cooling. Performance will be impacted");
+		mce_snprintf(e->mcgstatus_msg,
+			     "Processor %d heated above trip temperature. Throttling enabled.",
+			     e->cpu);
+		mce_snprintf(e->user_action,
+			     "Please check your system cooling. Performance will be impacted");
 	} else {
-		mce_snprintf(e->error_msg, "Processor %d below trip temperature. Throttling disabled", e->cpu);
+		mce_snprintf(e->error_msg,
+			     "Processor %d below trip temperature. Throttling disabled",
+			     e->cpu);
 	}
 }
 
@@ -190,14 +183,14 @@ static void decode_mcg(struct mce_event *e)
 
 static void bank_name(struct mce_event *e)
 {
-	char *buf = e->bank_name;
-
 	switch (e->bank) {
 	case MCE_THERMAL_BANK:
-		strcpy(buf, "THERMAL EVENT");
+		strscpy(e->bank_name, "THERMAL EVENT", sizeof(e->bank_name));
 		break;
 	case MCE_TIMEOUT_BANK:
-		strcpy(buf, "Timeout waiting for exception on other CPUs");
+		strscpy(e->bank_name,
+			"Timeout waiting for exception on other CPUs",
+			sizeof(e->bank_name));
 		break;
 	default:
 		break;
@@ -209,9 +202,8 @@ static char *get_RRRR_str(uint8_t rrrr)
 	unsigned int i;
 
 	for (i = 0; i < ARRAY_SIZE(RRRR); i++) {
-		if (RRRR[i].value == rrrr) {
+		if (RRRR[i].value == rrrr)
 			return RRRR[i].str;
-		}
 	}
 
 	return "UNKNOWN";
@@ -229,6 +221,8 @@ static char *get_RRRR_str(uint8_t rrrr)
 static void decode_mca(struct mce_event *e, uint64_t track, int *ismemerr)
 {
 	uint32_t mca = e->status & 0xffffL;
+	uint64_t status = e->status;
+	uint64_t misc = e->misc;
 
 	if (mca & (1UL << 12)) {
 		mce_snprintf(e->mcastatus_msg,
@@ -258,11 +252,6 @@ static void decode_mca(struct mce_event *e, uint64_t track, int *ismemerr)
 		mce_snprintf(e->mcastatus_msg,
 			     "%s CACHE %s %s Error", type, level,
 			     get_RRRR_str((mca & CACHE_RRRR_MASK) >> CACHE_RRRR_SHIFT));
-#if 0
-		/* FIXME: We shouldn't mix parsing with actions */
-		if (track == 2)
-			run_yellow_trigger(e->cpu, typenum, levelnum, type, level, e->socket);
-#endif
 	} else if (test_prefix(10, mca)) {
 		if (mca == 0x400)
 			mce_snprintf(e->mcastatus_msg,
@@ -278,11 +267,22 @@ static void decode_mca(struct mce_event *e, uint64_t track, int *ismemerr)
 			     get_RRRR_str((mca & BUS_RRRR_MASK) >> BUS_RRRR_SHIFT),
 			     decode_attr(II, (mca & BUS_II_MASK) >> BUS_II_SHIFT),
 			     decode_attr(T, (mca & BUS_T_MASK) >> BUS_T_SHIFT));
+		if ((status & MCI_STATUS_MISCV) && (status & 0xefff) == 0x0e0b) {
+			int seg, bus, dev, fn;
+
+			seg = EXTRACT(misc, 32, 39);
+			bus = EXTRACT(misc, 24, 31);
+			dev = EXTRACT(misc, 19, 23);
+			fn = EXTRACT(misc, 16, 18);
+			mce_snprintf(e->mcastatus_msg, "IO MCA reported by root port %x:%02x:%02x.%x",
+				     seg, bus, dev, fn);
+		}
 	} else if (test_prefix(7, mca)) {
 		decode_memory_controller(e, mca);
 		*ismemerr = 1;
-	} else
+	} else {
 		mce_snprintf(e->mcastatus_msg, "Unknown Error %x", mca);
+	}
 }
 
 static void decode_tracking(struct mce_event *e, uint64_t track)
@@ -430,7 +430,7 @@ static int domsr(int cpu, int msr, int bit)
 	unsigned long long data;
 	int fd;
 
-	sprintf(fpath, "/dev/cpu/%d/msr", cpu);
+	snprintf(fpath, sizeof(fpath), "/dev/cpu/%d/msr", cpu);
 	fd = open(fpath, O_RDWR);
 	if (fd == -1) {
 		switch (errno) {

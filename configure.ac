@@ -1,4 +1,6 @@
-AC_INIT([RASdaemon],[0.8.1])
+# SPDX-License-Identifier: GPL-2.0
+
+AC_INIT([RASdaemon],[0.8.3])
 AM_SILENT_RULES([yes])
 AC_CANONICAL_TARGET
 AC_CONFIG_MACRO_DIR([m4])
@@ -180,6 +182,18 @@ AS_IF([test "x$enable_memory_ce_pfa" = "xyes" || test "x$enable_all" = "xyes"], 
 AM_CONDITIONAL([WITH_MEMORY_CE_PFA], [test x$enable_memory_ce_pfa = xyes || test x$enable_all = xyes])
 AM_COND_IF([WITH_MEMORY_CE_PFA], [USE_MEMORY_CE_PFA="yes"], [USE_MEMORY_CE_PFA="no"])
 
+AC_ARG_ENABLE([memory_row_ce_pfa],
+    AS_HELP_STRING([--enable-memory-row-ce-pfa], [enable memory row Corrected Error predictive failure analysis]))
+
+AS_IF([test "x$enable_memory_row_ce_pfa" = "xyes" || test "x$enable_all" == "xyes"], [
+  AC_DEFINE(HAVE_MEMORY_ROW_CE_PFA,1,"have memory row corrected error predictive failure analysis")
+  AC_SUBST([WITH_MEMORY_ROW_CE_PFA])
+])
+AM_CONDITIONAL([WITH_MEMORY_ROW_CE_PFA], [test x$enable_memory_row_ce_pfa = xyes || test x$enable_all == xyes])
+AM_COND_IF([WITH_MEMORY_ROW_CE_PFA], [USE_MEMORY_ROW_CE_PFA="yes"], [USE_MEMORY_ROW_CE_PFA="no"])
+
+AM_CONDITIONAL([WITH_PFA], [test x$USE_MEMORY_CE_PFA = xyes || test x$USE_MEMORY_ROW_CE_PFA = xyes])
+
 AC_ARG_ENABLE([amp_ns_decode],
     AS_HELP_STRING([--enable-amp-ns-decode], [enable AMP_NS_DECODE events (currently experimental)]))
 
@@ -189,6 +203,16 @@ AS_IF([test "x$enable_amp_ns_decode" = "xyes" || test "x$enable_all" = "xyes"], 
 ])
 AM_CONDITIONAL([WITH_AMP_NS_DECODE], [test x$enable_amp_ns_decode = xyes || test x$enable_all = xyes])
 AM_COND_IF([WITH_AMP_NS_DECODE], [USE_AMP_NS_DECODE="yes"], [USE_AMP_NS_DECODE="no"])
+
+AC_ARG_ENABLE([openbmc_unified_sel],
+    AS_HELP_STRING([--enable-openbmc-unified-sel], [enable OPENBMC_UNIFIED_SEL events (currently experimental)]))
+
+AS_IF([test "x$enable_openbmc_unified_sel" = "xyes" || test "x$enable_all" = "xyes"], [
+  AC_DEFINE(HAVE_OPENBMC_UNIFIED_SEL,1,"have OpenBMC unified SEL")
+  AC_SUBST([WITH_OPENBMC_UNIFIED_SEL])
+])
+AM_CONDITIONAL([WITH_OPENBMC_UNIFIED_SEL], [test x$enable_openbmc_unified_sel = xyes || test x$enable_all = xyes])
+AM_COND_IF([WITH_OPENBMC_UNIFIED_SEL], [USE_OPENBMC_UNIFIED_SEL="yes"], [USE_OPENBMC_UNIFIED_SEL="no"])
 
 AC_ARG_ENABLE([jaguar_ns_decode],
     AS_HELP_STRING([--enable-jaguar-ns-decode], [enable JAGUAR_NS_DECODE events (currently experimental)]))
@@ -260,7 +284,9 @@ compile time options summary
     Memory Failure      : $USE_MEMORY_FAILURE
     CXL events          : $USE_CXL
     Memory CE PFA       : $USE_MEMORY_CE_PFA
+    Memory ROW CE PFA   : $USE_MEMORY_ROW_CE_PFA
     AMP RAS errors      : $USE_AMP_NS_DECODE
+    OpenBMC unified     : $USE_OPENBMC_UNIFIED_SEL
     CPU fault isolation : $USE_CPU_FAULT_ISOLATION
     YITIAN RAS errors   : $USE_YITIAN_NS_DECODE
     JAGUAR RAS errors   : $USE_JAGUAR_NS_DECODE

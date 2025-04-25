@@ -1,27 +1,20 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 /*
  * Copyright (c) Huawei Technologies Co., Ltd. 2021-2021. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
-#include <errno.h>
 #include <unistd.h>
-#include <limits.h>
+
 #include <ctype.h>
-#include "ras-logger.h"
+#include <errno.h>
+#include <fcntl.h>
+#include <limits.h>
 #include "ras-cpu-isolation.h"
+#include "ras-logger.h"
 
 #define SECOND_OF_MON (30 * 24 * 60 * 60)
 #define SECOND_OF_DAY (24 * 60 * 60)
@@ -84,7 +77,7 @@ static int open_sys_file(unsigned int cpu, int __oflag, const char *format)
 	char real_path[PATH_MAX] = "";
 
 	snprintf(path, sizeof(path), format, cpu);
-	if (strlen(path) > PATH_MAX || realpath(path, real_path) == NULL) {
+	if (strlen(path) > PATH_MAX || !realpath(path, real_path)) {
 		log(TERM, LOG_ERR, "[%s]:open file: %s failed\n", __func__, path);
 		return -1;
 	}
@@ -178,8 +171,9 @@ static int parse_ul_config(struct isolation_param *config, char *env, unsigned l
 				return -1;
 			}
 			*value = DEC_CHECK * (*value) + (env[i] - '0');
-		} else
+		} else {
 			return -1;
+		}
 	}
 
 	if (!has_unit)
@@ -253,14 +247,13 @@ void cpu_infos_free(void)
 static int do_cpu_offline(unsigned int cpu)
 {
 	int fd, rc;
-	char buf[2] = "";
+	char buf[2] = "0";
 
 	cpu_infos[cpu].state = CPU_OFFLINE_FAILED;
 	fd = open_sys_file(cpu, O_RDWR, cpu_path_format);
 	if (fd == -1)
 		return HANDLE_FAILED;
 
-	strcpy(buf, "0");
 	rc = write(fd, buf, strlen(buf));
 	if (rc < 0) {
 		log(TERM, LOG_ERR, "cpu%u offline failed, errno:%d\n", cpu, errno);
@@ -283,10 +276,10 @@ static int do_ce_handler(unsigned int cpu)
 	struct link_queue *queue = cpu_infos[cpu].ce_queue;
 	unsigned int tmp;
 	/*
-	 * Since we just count all error numbers in setted cycle, we store the time
-	 * and error numbers from current event to the queue, then everytime we
+	 * Since we just count all error numbers in set cycle, we store the time
+	 * and error numbers from current event to the queue, then every time we
 	 * calculate the period from beginning time to ending time, if the period
-	 * exceeds setted cycle, we pop the beginning time and error until the period
+	 * exceeds set cycle, we pop the beginning time and error until the period
 	 * from new beginning time to ending time is less than cycle.
 	 */
 	while (queue->head && queue->tail && queue->tail->time - queue->head->time > cycle.value) {
@@ -391,15 +384,16 @@ void ras_record_cpu_error(struct error_info *err_info, int cpu)
 	}
 
 	ret = error_handler(cpu, err_info);
-	if (ret == HANDLE_NOTHING)
+	if (ret == HANDLE_NOTHING) {
 		log(TERM, LOG_WARNING, "Doing nothing in the cpu%d\n", cpu);
-	else if (ret == HANDLE_SUCCEED) {
+	} else if (ret == HANDLE_SUCCEED) {
 		log(TERM, LOG_INFO, "Offline cpu%d succeed, the state is %s\n",
 		    cpu, cpu_state[cpu_infos[cpu].state]);
 		clear_queue(cpu_infos[cpu].ce_queue);
 		cpu_infos[cpu].ce_nums = 0;
 		cpu_infos[cpu].uce_nums = 0;
-	} else
+	} else {
 		log(TERM, LOG_WARNING, "Offline cpu%d fail, the state is %s\n",
 		    cpu, cpu_state[cpu_infos[cpu].state]);
+	}
 }

@@ -1,18 +1,12 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 /*
  * Copyright (c) Huawei Technologies Co., Ltd. 2021-2021. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  */
+
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "queue.h"
 #include "ras-logger.h"
 
@@ -68,7 +62,7 @@ void free_queue(struct link_queue *queue)
 		free(queue);
 }
 
-/* It should be guranteed that the param is not NULL */
+/* It should be guaranteed that the param is not NULL */
 void push(struct link_queue *queue, struct queue_node *node)
 {
 	/* there is no element in the queue */
