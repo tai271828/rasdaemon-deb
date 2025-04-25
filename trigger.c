@@ -1,8 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0
+
 #define _GNU_SOURCE
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <sys/wait.h>
+#include <unistd.h>
+
 #include "ras-logger.h"
 #include "trigger.h"
 

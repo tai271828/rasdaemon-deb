@@ -253,7 +253,9 @@ WITH_JAGUAR_NS_DECODE = @WITH_JAGUAR_NS_DECODE@
 WITH_MCE = @WITH_MCE@
 WITH_MEMORY_CE_PFA = @WITH_MEMORY_CE_PFA@
 WITH_MEMORY_FAILURE = @WITH_MEMORY_FAILURE@
+WITH_MEMORY_ROW_CE_PFA = @WITH_MEMORY_ROW_CE_PFA@
 WITH_NON_STANDARD = @WITH_NON_STANDARD@
+WITH_OPENBMC_UNIFIED_SEL = @WITH_OPENBMC_UNIFIED_SEL@
 WITH_SQLITE3 = @WITH_SQLITE3@
 WITH_YITIAN_NS_DECODE = @WITH_YITIAN_NS_DECODE@
 abs_builddir = @abs_builddir@
@@ -314,6 +316,8 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+
+# SPDX-License-Identifier: GPL-2.0
 dist_sbin_SCRIPTS = \
 	ras-mc-ctl
 

@@ -1,27 +1,19 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2018, AMD, Inc. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 and
- * only version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  */
 
 #include <stdio.h>
 #include <string.h>
 
-#include "ras-mce-handler.h"
 #include "bitfield.h"
+#include "ras-mce-handler.h"
 
 /* MCA_STATUS REGISTER FOR FAMILY 17H
  *********************** Higher 32-bits *****************************
  * 63: VALIDERROR, 62: OVERFLOW, 61: UC, 60: Err ENABLE,
  * 59: Misc Valid, 58: Addr Valid, 57: PCC, 56: ErrCoreID Valid,
- * 55: TCC, 54: RES, 53: Syndrom Valid, 52: Transparanet,
+ * 55: TCC, 54: RES, 53: Syndrome Valid, 52: Transparent,
  * 51: RES, 50: RES, 49: RES, 48: RES,
  * 47: RES, 46: CECC, 45: UECC, 44: Deferred,
  * 43: Poison, 42: RES, 41: RES, 40: RES,
@@ -952,17 +944,20 @@ void decode_smca_error(struct mce_event *e, struct mce_priv *m)
 	}
 
 	if (i >= MAX_NR_BANKS) {
-		strcpy(e->mcastatus_msg, "Couldn't find bank type with IPID");
+		strscpy(e->mcastatus_msg, "Couldn't find bank type with IPID",
+			sizeof(e->mcastatus_msg));
 		return;
 	}
 
 	if (bank_type >= N_SMCA_BANK_TYPES) {
-		strcpy(e->mcastatus_msg, "Don't know how to decode this bank");
+		strscpy(e->mcastatus_msg, "Don't know how to decode this bank",
+			sizeof(e->mcastatus_msg));
 		return;
 	}
 
 	if (bank_type == SMCA_RESERVED) {
-		strcpy(e->mcastatus_msg, "Bank 4 is reserved.\n");
+		strscpy(e->mcastatus_msg, "Bank 4 is reserved.\n",
+			sizeof(e->mcastatus_msg));
 		return;
 	}
 
@@ -978,7 +973,7 @@ void decode_smca_error(struct mce_event *e, struct mce_priv *m)
 			     xec);
 
 	if ((bank_type == SMCA_UMC || bank_type == SMCA_UMC_QUIRK) && xec == 0) {
-		if ((m->family == 0x19) && (m->model >= 0x90 && m->model <= 0x9f)) {
+		if (m->family == 0x19 && (m->model >= 0x90 && m->model <= 0x9f)) {
 			/* MCA_IPID[InstanceIdHi] give the AMD Node Die ID */
 			mce_snprintf(e->mc_location, "memory_die_id=%d", mcatype_instancehi / 4);
 		} else {
@@ -998,16 +993,8 @@ void decode_smca_error(struct mce_event *e, struct mce_priv *m)
 			     channel, csrow);
 	}
 
-	if (e->vdata_len) {
-		uint64_t smca_config = e->vdata[2];
-
-		/*
-		 * BIT 9 of the CONFIG register of a few SMCA Bank types indicates
-		 * presence of FRU Text in SYND 1 / 2 registers
-		 */
-		if (smca_config & BIT(9))
-			memcpy(e->frutext, e->vdata, 16);
-	}
+	if (e->vdata_len)
+		memcpy(e->frutext, e->vdata, 16);
 }
 
 int parse_amd_smca_event(struct ras_events *ras, struct mce_event *e)

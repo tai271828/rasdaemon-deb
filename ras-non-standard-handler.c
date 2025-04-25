@@ -1,32 +1,28 @@
+// SPDX-License-Identifier: GPL-2.0
+
 /*
  * Copyright (c) 2016, The Linux Foundation. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 and
- * only version 2 as published by the Free Software Foundation.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
-#include <unistd.h>
 #include <traceevent/kbuffer.h>
-#include "ras-non-standard-handler.h"
-#include "ras-record.h"
+#include <unistd.h>
+
 #include "ras-logger.h"
+#include "ras-non-standard-handler.h"
 #include "ras-report.h"
+#include "types.h"
 
 static struct  ras_ns_ev_decoder *ras_ns_ev_dec_list;
 
 void print_le_hex(struct trace_seq *s, const uint8_t *buf, int index)
 {
-	trace_seq_printf(s, "%02x%02x%02x%02x", buf[index + 3], buf[index + 2], buf[index + 1], buf[index]);
+	trace_seq_printf(s, "%02x%02x%02x%02x",
+			 buf[index + 3], buf[index + 2],
+			 buf[index + 1], buf[index]);
 }
 
 static char *uuid_le(const char *uu)
@@ -37,7 +33,7 @@ static char *uuid_le(const char *uu)
 	static const unsigned char le[16] = {3, 2, 1, 0, 5, 4, 7, 6, 8, 9, 10, 11, 12, 13, 14, 15};
 
 	for (i = 0; i < 16; i++) {
-		p += sprintf(p, "%.2x", (unsigned char)uu[le[i]]);
+		p += snprintf(p, sizeof(uuid), "%.2x", (unsigned char)uu[le[i]]);
 		switch (i) {
 		case 3:
 		case 5:
@@ -253,8 +249,9 @@ int ras_non_standard_event_handler(struct trace_seq *s,
 			if (++line_count == 4) {
 				trace_seq_printf(s, "\n  %08x: ", i);
 				line_count = 0;
-			} else
+			} else {
 				trace_seq_printf(s, " ");
+			}
 		}
 	}
 

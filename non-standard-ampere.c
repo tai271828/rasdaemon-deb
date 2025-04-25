@@ -1,22 +1,19 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 /*
  * Copyright (c) 2020, Ampere Computing LLC.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include "ras-record.h"
-#include "ras-logger.h"
-#include "ras-report.h"
-#include "ras-non-standard-handler.h"
+
 #include "non-standard-ampere.h"
+#include "ras-logger.h"
+#include "ras-non-standard-handler.h"
+#include "ras-report.h"
+#include "types.h"
 
 /*Armv8 RAS compicant Error Record(APEI and BMC Reporting) Payload Type 0*/
 static const char * const disp_payload0_err_reg_name[] = {
@@ -739,8 +736,7 @@ void decode_amp_payload0_err_regs(struct ras_ns_ev_decoder *ev_decoder,
 	p += snprintf(p, end - p, " 0x%x\n", INSTANCE(err->instance));
 
 	//display socket number
-	if ((TYPE(err->type) == 0) &&
-	    ((err->subtype == 0x01) || (err->subtype == 0x02))) {
+	if (!TYPE(err->type) && (err->subtype == 0x01 || err->subtype == 0x02)) {
 		core_num = INSTANCE(err->instance) * 2 + err->subtype - 1;
 		p += snprintf(p, end - p, " %s",
 			      disp_payload1_err_reg_name[i++]);
@@ -1058,8 +1054,9 @@ static int decode_amp_oem_type_error(struct ras_events *ras,
 	} else if (payload_type == PAYLOAD_TYPE_3) {
 		db_tab = amp_payload3_event_tab;
 		id = AMP_PAYLOAD3_FIELD_TIMESTAMP;
-	} else
+	} else {
 		return -1;
+	}
 
 	if (!ev_decoder->stmt_dec_record) {
 		if (ras_mc_add_vendor_table(ras, &ev_decoder->stmt_dec_record,

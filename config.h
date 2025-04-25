@@ -52,8 +52,14 @@
 /* "have memory failure events collect" */
 #define HAVE_MEMORY_FAILURE 1
 
+/* "have memory row corrected error predictive failure analysis" */
+#define HAVE_MEMORY_ROW_CE_PFA 1
+
 /* "have UNKNOWN_SEC events collect" */
 #define HAVE_NON_STANDARD 1
+
+/* "have OpenBMC unified SEL" */
+#define HAVE_OPENBMC_UNIFIED_SEL 1
 
 /* "have sqlite3" */
 #define HAVE_SQLITE3 1
@@ -125,7 +131,7 @@
 #define PACKAGE_NAME "RASdaemon"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "RASdaemon 0.8.1"
+#define PACKAGE_STRING "RASdaemon 0.8.3"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "rasdaemon"
@@ -134,7 +140,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.8.1"
+#define PACKAGE_VERSION "0.8.3"
 
 /* rasdaemon db store state dir */
 #define RASSTATEDIR "/usr/local/var/lib/rasdaemon"
@@ -142,10 +148,10 @@
 /* ras events database */
 #define RAS_DB_FNAME "ras-mc_event.db"
 
-/* Define to 1 if all of the C90 standard headers exist (not just the ones
+/* Define to 1 if all of the C89 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
    backward compatibility; new code need not use it. */
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "0.8.1"
+#define VERSION "0.8.3"
