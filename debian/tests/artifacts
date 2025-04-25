@@ -2,7 +2,7 @@
 set -e
 
 
-for path in "/usr/lib/systemd/system/ras-mc-ctl.service" "/usr/lib/systemd/system/rasdaemon.service" "/usr/sbin/ras-mc-ctl" "/usr/sbin/rasdaemon"
+for path in "/usr/lib/systemd/system/ras-mc-ctl.service" "/usr/lib/systemd/system/rasdaemon.service" "/usr/sbin/ras-mc-ctl" "/usr/sbin/rasdaemon" "/var/lib/rasdaemon"
 do
   ls $path
 done
