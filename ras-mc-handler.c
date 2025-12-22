@@ -103,6 +103,27 @@ free:
 		free(env[i]);
 }
 
+static unsigned long long per_sec_ce_count;
+unsigned long long mc_ce_stat_threshold;
+static time_t cur;
+static int ras_mc_event_stat(time_t now, struct ras_mc_event *e)
+{
+	if (strcmp(e->error_type, "Corrected"))
+		return 0;
+
+	if (cur == now) {
+		per_sec_ce_count += e->error_count;
+	} else {
+		cur = now;
+		per_sec_ce_count = e->error_count;
+	}
+
+	if (per_sec_ce_count > mc_ce_stat_threshold)
+		log(ALL, LOG_ERR, "    mc_event_stat: memory corrected error report %lld/sec\n", per_sec_ce_count);
+
+	return 0;
+}
+
 int ras_mc_event_handler(struct trace_seq *s,
 			 struct tep_record *record,
 			 struct tep_event *event, void *context)
@@ -114,6 +135,46 @@ int ras_mc_event_handler(struct trace_seq *s,
 	struct tm *tm;
 	struct ras_mc_event ev;
 	int parsed_fields = 0;
+	const char *level;
+
+	if (tep_get_field_val(s, event, "error_type", record, &val, 1) < 0)
+		goto parse_error;
+	parsed_fields++;
+
+	switch (val) {
+	case HW_EVENT_ERR_CORRECTED:
+		ev.error_type = "Corrected";
+		break;
+	case HW_EVENT_ERR_UNCORRECTED:
+		ev.error_type = "Uncorrected";
+		break;
+	case HW_EVENT_ERR_DEFERRED:
+		ev.error_type = "Deferred";
+		break;
+	case HW_EVENT_ERR_FATAL:
+		ev.error_type = "Fatal";
+		break;
+	case HW_EVENT_ERR_INFO:
+	default:
+		ev.error_type = "Info";
+	}
+
+	switch (val) {
+	case HW_EVENT_ERR_UNCORRECTED:
+	case HW_EVENT_ERR_DEFERRED:
+		level = loglevel_str[LOGLEVEL_CRIT];
+		break;
+	case HW_EVENT_ERR_FATAL:
+		level = loglevel_str[LOGLEVEL_EMERG];
+		break;
+	case HW_EVENT_ERR_CORRECTED:
+		level = loglevel_str[LOGLEVEL_ERR];
+		break;
+	default:
+		level = loglevel_str[LOGLEVEL_DEBUG];
+		break;
+	}
+	trace_seq_printf(s, "%s ", level);
 
 	/*
 	 * Newer kernels (3.10-rc1 or upper) provide an uptime clock.
@@ -141,28 +202,6 @@ int ras_mc_event_handler(struct trace_seq *s,
 
 	ev.error_count = val;
 	trace_seq_printf(s, "%d ", ev.error_count);
-
-	if (tep_get_field_val(s, event, "error_type", record, &val, 1) < 0)
-		goto parse_error;
-	parsed_fields++;
-
-	switch (val) {
-	case HW_EVENT_ERR_CORRECTED:
-		ev.error_type = "Corrected";
-		break;
-	case HW_EVENT_ERR_UNCORRECTED:
-		ev.error_type = "Uncorrected";
-		break;
-	case HW_EVENT_ERR_DEFERRED:
-		ev.error_type = "Deferred";
-		break;
-	case HW_EVENT_ERR_FATAL:
-		ev.error_type = "Fatal";
-		break;
-	case HW_EVENT_ERR_INFO:
-	default:
-		ev.error_type = "Info";
-	}
 
 	trace_seq_puts(s, ev.error_type);
 	if (ev.error_count > 1)
@@ -262,6 +301,8 @@ int ras_mc_event_handler(struct trace_seq *s,
 	/* Insert data into the SGBD */
 
 	ras_store_mc_event(ras, &ev);
+
+	ras_mc_event_stat(now, &ev);
 
 #ifdef HAVE_MEMORY_CE_PFA
 	/* Account page corrected errors */

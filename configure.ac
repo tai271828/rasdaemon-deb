@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 
-AC_INIT([RASdaemon],[0.8.3])
+AC_INIT([RASdaemon],[0.8.4])
 AM_SILENT_RULES([yes])
 AC_CANONICAL_TARGET
 AC_CONFIG_MACRO_DIR([m4])
@@ -54,6 +54,14 @@ AC_ARG_ENABLE([aer],
 AS_IF([test "x$enable_aer" = "xyes" || test "x$enable_all" = "xyes"], [
   AC_DEFINE(HAVE_AER,1,"have PCIe AER events collect")
   AC_SUBST([WITH_AER])
+
+  has_libpci_ver=0
+  dnl check for pciutils library
+  PKG_CHECK_MODULES([LIBPCI], [libpci], [has_libpci_ver=1])
+
+  AS_IF([test "$has_libpci_ver" -eq 0], [
+    AC_MSG_ERROR([libpci is required but were not found])
+])
 ])
 AM_CONDITIONAL([WITH_AER], [test x$enable_aer = xyes || test x$enable_all = xyes])
 AM_COND_IF([WITH_AER], [USE_AER="yes"], [USE_AER="no"])
@@ -244,6 +252,32 @@ AS_IF([test "x$enable_yitian_ns_decode" = "xyes" || test "x$enable_all" == "xyes
 AM_CONDITIONAL([WITH_YITIAN_NS_DECODE], [test x$enable_yitian_ns_decode = xyes || test x$enable_all == xyes])
 AM_COND_IF([WITH_YITIAN_NS_DECODE], [USE_YITIAN_NS_DECODE="yes"], [USE_YITIAN_NS_DECODE="no"])
 
+AC_ARG_ENABLE([signal],
+    AS_HELP_STRING([--enable-signal], [enable signal event(currently experimental)]))
+
+AS_IF([test "x$enable_signal" = "xyes" || test "x$enable_all" == "xyes"], [
+  AC_DEFINE(HAVE_SIGNAL,1,"have signal event")
+  AC_SUBST([WITH_SIGNAL])
+])
+AM_CONDITIONAL([WITH_SIGNAL], [test x$enable_signal = xyes || test x$enable_all == xyes])
+AM_COND_IF([WITH_SIGNAL], [USE_SIGNAL="yes"], [USE_SIGNAL="no"])
+
+AS_IF([test "x$enable_memory_ce_pfa" = "xyes" || test "x$enable_memory_row_ce_pfa" = "xyes" || test "x$enable_memory_failure" = "xyes" || test "x$enable_all" == "xyes"], [
+  AC_DEFINE(HAVE_POISON_PAGE_STAT,1,"have poison page statistics")
+  AC_SUBST([WITH_POISON_PAGE_STAT])
+])
+AM_CONDITIONAL([WITH_POISON_PAGE_STAT], [test "x$enable_memory_ce_pfa" = "xyes" || test "x$enable_memory_row_ce_pfa" = "xyes" || test "x$enable_memory_failure" = "xyes" || test "x$enable_all" == "xyes" ])
+
+AC_ARG_ENABLE([erst],
+    AS_HELP_STRING([--enable-erst], [enable erst (currently experimental)]))
+
+AS_IF([test "x$enable_erst" = "xyes" || test "x$enable_all" == "xyes"], [
+  AC_DEFINE(HAVE_ERST,1,"have ERST")
+  AC_SUBST([WITH_ERST])
+])
+AM_CONDITIONAL([WITH_ERST], [test x$enable_erst = xyes || test x$enable_all == xyes])
+AM_COND_IF([WITH_ERST], [USE_ERST="yes"], [USE_ERST="no"])
+
 test "$sysconfdir" = '${prefix}/etc' && sysconfdir=/etc
 
 CFLAGS="$CFLAGS -Wall -Wmissing-prototypes -Wstrict-prototypes"
@@ -290,4 +324,6 @@ compile time options summary
     CPU fault isolation : $USE_CPU_FAULT_ISOLATION
     YITIAN RAS errors   : $USE_YITIAN_NS_DECODE
     JAGUAR RAS errors   : $USE_JAGUAR_NS_DECODE
+    Signal              : $USE_SIGNAL
+    ERST                : $USE_ERST
 EOF

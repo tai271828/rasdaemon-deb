@@ -9,6 +9,7 @@
 #define __RAS_RECORD_H
 
 #include <sqlite3.h>
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -27,6 +28,7 @@ struct ras_mc_event {
 	signed char top_layer, middle_layer, lower_layer;
 	unsigned long long address, grain, syndrome;
 	const char *driver_detail;
+	int erst;
 };
 
 struct ras_mc_offline_event {
@@ -41,10 +43,13 @@ struct ras_mc_offline_event {
 struct ras_aer_event {
 	char timestamp[64];
 	const char *error_type;
-	const char *dev_name;
+	char *dev_name;
 	uint8_t tlp_header_valid;
 	uint32_t *tlp_header;
 	const char *msg;
+	int erst;
+	uint16_t vendor_id;
+	uint16_t device_id;
 };
 
 struct ras_extlog_event {
@@ -124,6 +129,7 @@ struct ras_cxl_poison_event {
 	const char *region;
 	const char *uuid;
 	uint64_t hpa;
+	uint64_t hpa_alias0;
 	uint64_t dpa;
 	uint32_t dpa_length;
 	const char *source;
@@ -183,6 +189,8 @@ struct ras_cxl_event_common_hdr {
 	uint8_t hdr_length;
 	uint8_t hdr_maint_op_class;
 	uint8_t hdr_maint_op_sub_class;
+	uint16_t hdr_ld_id;
+	uint8_t hdr_head_id;
 };
 
 struct ras_cxl_generic_event {
@@ -206,6 +214,7 @@ struct ras_cxl_general_media_event {
 	uint8_t res_id[CXL_PLDM_RES_ID_LEN];
 	uint16_t validity_flags;
 	uint64_t hpa;
+	uint64_t hpa_alias0;
 	const char *region;
 	const char *region_uuid;
 	uint8_t cme_threshold_ev_flags;
@@ -231,6 +240,7 @@ struct ras_cxl_dram_event {
 	uint8_t *cor_mask;
 	uint16_t validity_flags;
 	uint64_t hpa;
+	uint64_t hpa_alias0;
 	const char *region;
 	const char *region_uuid;
 	uint8_t *comp_id;
@@ -258,6 +268,36 @@ struct ras_cxl_memory_module_event {
 	uint8_t res_id[CXL_PLDM_RES_ID_LEN];
 };
 
+struct ras_signal_event {
+	char timestamp[64];
+	int sig;
+	int error_no;
+	int code;
+	char *comm;
+	pid_t pid;
+	int group;
+	int result;
+};
+
+struct ras_cxl_memory_sparing_event {
+	struct ras_cxl_event_common_hdr hdr;
+	uint8_t flags;
+	uint8_t result;
+	uint16_t validity_flags;
+	uint16_t res_avail;
+	uint8_t channel;
+	uint8_t rank;
+	uint32_t nibble_mask;
+	uint8_t bank_group;
+	uint8_t bank;
+	uint32_t row;
+	uint16_t column;
+	uint8_t sub_channel;
+	uint8_t *comp_id;
+	uint8_t entity_id[CXL_PLDM_ENTITY_ID_LEN];
+	uint8_t res_id[CXL_PLDM_RES_ID_LEN];
+};
+
 struct ras_mc_event;
 struct ras_aer_event;
 struct ras_extlog_event;
@@ -275,6 +315,8 @@ struct ras_cxl_generic_event;
 struct ras_cxl_general_media_event;
 struct ras_cxl_dram_event;
 struct ras_cxl_memory_module_event;
+struct ras_signal_event;
+struct ras_cxl_memory_sparing_event;
 
 #ifdef HAVE_SQLITE3
 
@@ -314,6 +356,9 @@ struct sqlite3_priv {
 	sqlite3_stmt	*stmt_cxl_general_media_event;
 	sqlite3_stmt	*stmt_cxl_dram_event;
 	sqlite3_stmt	*stmt_cxl_memory_module_event;
+#endif
+#ifdef HAVE_SIGNAL
+	sqlite3_stmt	*stmt_signal_event;
 #endif
 };
 
@@ -361,6 +406,8 @@ int ras_store_cxl_dram_event(struct ras_events *ras,
 			     struct ras_cxl_dram_event *ev);
 int ras_store_cxl_memory_module_event(struct ras_events *ras,
 				      struct ras_cxl_memory_module_event *ev);
+int ras_store_signal_event(struct ras_events *ras,
+			   struct ras_signal_event *ev);
 
 #else
 static inline int ras_mc_event_opendb(unsigned int cpu,
@@ -401,6 +448,8 @@ static inline int ras_store_cxl_dram_event(struct ras_events *ras,
 					   struct ras_cxl_dram_event *ev) { return 0; };
 static inline int ras_store_cxl_memory_module_event(struct ras_events *ras,
 						    struct ras_cxl_memory_module_event *ev) { return 0; };
+static inline int ras_store_signal_event(struct ras_events *ras,
+					 struct ras_signal_event *ev) { return 0; };
 
 #endif
 
