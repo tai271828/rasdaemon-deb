@@ -30,6 +30,9 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
+/* "have ERST" */
+#undef HAVE_ERST
+
 /* "have EXTLOG events collect" */
 #undef HAVE_EXTLOG
 
@@ -59,6 +62,12 @@
 
 /* "have OpenBMC unified SEL" */
 #undef HAVE_OPENBMC_UNIFIED_SEL
+
+/* "have poison page statistics" */
+#undef HAVE_POISON_PAGE_STAT
+
+/* "have signal event" */
+#undef HAVE_SIGNAL
 
 /* "have sqlite3" */
 #undef HAVE_SQLITE3

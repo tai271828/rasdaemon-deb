@@ -10,9 +10,12 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "ras-erst.h"
 #include "ras-events.h"
 #include "ras-logger.h"
+#include "ras-poison-page-stat.h"
 #include "ras-record.h"
+#include "ras-mc-handler.h"
 #include "types.h"
 
 /*
@@ -23,6 +26,8 @@
 #define TOOL_DESCRIPTION "RAS daemon to log the RAS events."
 #define ARGS_DOC "<options>"
 #define DISABLE "DISABLE"
+#define MC_CE_STAT_THRESHOLD "MC_CE_STAT_THRESHOLD"
+#define POISON_STAT_THRESHOLD "POISON_STAT_THRESHOLD"
 
 const char *argp_program_version = TOOL_NAME " " VERSION;
 const char *argp_program_bug_address = "Mauro Carvalho Chehab <mchehab@kernel.org>";
@@ -93,22 +98,22 @@ static error_t parse_opt_offline(int key, char *arg,
 		event.smca = true;
 		break;
 	case MODEL:
-		event.model = strtoul(state->argv[state->next], NULL, 0);
+		event.model = strtoul(arg, NULL, 0);
 		break;
 	case FAMILY:
-		event.family = strtoul(state->argv[state->next], NULL, 0);
+		event.family = strtoul(arg, NULL, 0);
 		break;
 	case BANK_NUM:
-		event.bank = atoi(state->argv[state->next]);
+		event.bank = atoi(arg);
 		break;
 	case IPID_REG:
-		event.ipid = strtoull(state->argv[state->next], NULL, 0);
+		event.ipid = strtoull(arg, NULL, 0);
 		break;
 	case STATUS_REG:
-		event.status = strtoull(state->argv[state->next], NULL, 0);
+		event.status = strtoull(arg, NULL, 0);
 		break;
 	case SYNDROME_REG:
-		event.synd = strtoull(state->argv[state->next], NULL, 0);
+		event.synd = strtoull(arg, NULL, 0);
 		break;
 	default:
 		return ARGP_ERR_UNKNOWN;
@@ -126,15 +131,27 @@ int main(int argc, char *argv[])
 
 	choices_disable = getenv(DISABLE);
 
+	if (getenv(MC_CE_STAT_THRESHOLD))
+		mc_ce_stat_threshold = strtoull(getenv(MC_CE_STAT_THRESHOLD), NULL, 0);
+	if (mc_ce_stat_threshold)
+		log(TERM, LOG_INFO, "Threshold of memory Corrected Errors statistics is %lld\n", mc_ce_stat_threshold);
+
+#ifdef HAVE_POISON_PAGE_STAT
+	if (getenv(POISON_STAT_THRESHOLD))
+		poison_stat_threshold = strtoull(getenv(POISON_STAT_THRESHOLD), NULL, 0);
+	if (poison_stat_threshold)
+		log(TERM, LOG_INFO, "Threshold of poison page statistics is %lld kB\n", poison_stat_threshold);
+#endif
+
 #ifdef HAVE_MCE
 	const struct argp_option offline_options[] = {
 		{"smca", SMCA, 0, 0, "AMD SMCA Error Decoding"},
-		{"model", MODEL, 0, 0, "CPU Model"},
-		{"family", FAMILY, 0, 0, "CPU Family"},
-		{"bank", BANK_NUM, 0, 0, "Bank Number"},
-		{"ipid", IPID_REG, 0, 0, "IPID Register (for SMCA systems only)"},
-		{"status", STATUS_REG, 0, 0, "Status Register"},
-		{"synd", SYNDROME_REG, 0, 0, "Syndrome Register"},
+		{"model", MODEL, "MODEL", 0, "CPU Model"},
+		{"family", FAMILY, "FAMILY", 0, "CPU Family"},
+		{"bank", BANK_NUM, "BANK_NUM", 0, "Bank Number"},
+		{"ipid", IPID_REG, "IPID_REG", 0, "IPID Register (for SMCA systems only)"},
+		{"status", STATUS_REG, "STATUS_REG", 0, "Status Register"},
+		{"synd", SYNDROME_REG, "SYNDROME_REG", 0, "Syndrome Register"},
 		{0, 0, 0, 0, 0, 0},
 	};
 
@@ -208,6 +225,16 @@ int main(int argc, char *argv[])
 	if (!args.foreground)
 		if (daemon(0, 0))
 			exit(EXIT_FAILURE);
+
+#ifdef HAVE_ERST
+#ifdef HAVE_MCE
+	if (choices_disable && strlen(choices_disable) != 0 &&
+	    strstr(choices_disable, "ras:erst"))
+		log(ALL, LOG_INFO, "Disabled ras:erst from config\n");
+	else
+		handle_erst();
+#endif
+#endif
 
 	handle_ras_events(args.record_events, args.enable_ipmitool);
 

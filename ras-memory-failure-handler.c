@@ -12,6 +12,7 @@
 
 #include "ras-logger.h"
 #include "ras-memory-failure-handler.h"
+#include "ras-poison-page-stat.h"
 #include "ras-report.h"
 #include "trigger.h"
 #include "types.h"
@@ -171,6 +172,7 @@ int ras_memory_failure_event_handler(struct trace_seq *s,
 	struct tm *tm;
 	struct ras_mf_event ev;
 
+	trace_seq_printf(s, "%s ", loglevel_str[LOGLEVEL_ALERT]);
 	/*
 	 * Newer kernels (3.10-rc1 or upper) provide an uptime clock.
 	 * On previous kernels, the way to properly generate an event would
@@ -207,6 +209,10 @@ int ras_memory_failure_event_handler(struct trace_seq *s,
 		return -1;
 	ev.action_result = get_action_result(val);
 	trace_seq_printf(s, "action_result=%s ", ev.action_result);
+
+#ifdef HAVE_POISON_PAGE_STAT
+	ras_poison_page_stat();
+#endif
 
 	/* Store data into the SQLite DB */
 #ifdef HAVE_SQLITE3

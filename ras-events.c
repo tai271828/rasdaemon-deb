@@ -34,6 +34,7 @@
 #include "ras-memory-failure-handler.h"
 #include "ras-non-standard-handler.h"
 #include "ras-page-isolation.h"
+#include "ras-signal-handler.h"
 #include "ras-record.h"
 #include "trigger.h"
 
@@ -313,6 +314,11 @@ int toggle_ras_mc_event(int enable)
 	rc |= __toggle_ras_mc_event(ras, "cxl", "cxl_general_media", enable);
 	rc |= __toggle_ras_mc_event(ras, "cxl", "cxl_dram", enable);
 	rc |= __toggle_ras_mc_event(ras, "cxl", "cxl_memory_module", enable);
+	rc |= __toggle_ras_mc_event(ras, "cxl", "cxl_memory_sparing", enable);
+#endif
+
+#ifdef HAVE_SIGNAL
+	rc |= __toggle_ras_mc_event(ras, "signal", "signal_generate", enable);
 #endif
 
 free_ras:
@@ -335,7 +341,7 @@ static void setup_event_trigger(char *event)
 }
 
 #ifdef HAVE_DISKERROR
-#ifndef HAVE_BLK_RQ_ERROR
+#if (!defined(HAVE_BLK_RQ_ERROR)) || defined(HAVE_SIGNAL)
 /*
  * Set kernel filter. libtrace doesn't provide an API for setting filters
  * in kernel, we have to implement it here.
@@ -376,7 +382,7 @@ static int filter_ras_mc_event(struct ras_events *ras, char *group, char *event,
 
 static int get_pagesize(struct ras_events *ras, struct tep_handle *pevent)
 {
-	int fd, len, page_size = 8192;
+	int fd, len, page_size = 4096;
 	char buf[page_size];
 
 	fd = open_trace(ras, "events/header_page", O_RDONLY);
@@ -821,6 +827,18 @@ static int select_tracing_timestamp(struct ras_events *ras)
 	return 0;
 }
 
+static bool check_event_exist(struct ras_events *ras, char *group, char *event)
+{
+	char fname[MAX_PATH + 256];
+
+	snprintf(fname, sizeof(fname), "%s/tracing/events/%s/%s",
+		 ras->debugfs, group, event);
+	if (access(fname, F_OK) == 0)
+		return true;
+
+	return false;
+}
+
 #define EVENT_DISABLED	1
 
 static int add_event_handler(struct ras_events *ras, struct tep_handle *pevent,
@@ -831,6 +849,12 @@ static int add_event_handler(struct ras_events *ras, struct tep_handle *pevent,
 	int size = 0;
 	char *page, fname[MAX_PATH + 1];
 	struct tep_event_filter *filter = NULL;
+
+	if (!check_event_exist(ras, group, event)) {
+		log(ALL, LOG_WARNING, "%s:%s event not exist\n",
+		    group, event);
+		return -EINVAL;
+	}
 
 	snprintf(fname, sizeof(fname), "events/%s/%s/format", group, event);
 
@@ -859,12 +883,23 @@ static int add_event_handler(struct ras_events *ras, struct tep_handle *pevent,
 	}
 
 	do {
+		if (size > 0) {
+			page = realloc(page, page_size + size);
+			if (!page) {
+				rc = -errno;
+				log(TERM, LOG_ERR,
+				    "Can't reallocate page to read %s:%s format\n",
+				    group, event);
+				close(fd);
+				return rc;
+			}
+		}
 		rc = read(fd, page + size, page_size);
 		if (rc < 0) {
 			log(TERM, LOG_ERR, "Can't get arch page size\n");
 			free(page);
 			close(fd);
-			return size;
+			return rc;
 		}
 		size += rc;
 	} while (rc > 0);
@@ -892,7 +927,8 @@ static int add_event_handler(struct ras_events *ras, struct tep_handle *pevent,
 		filter = tep_filter_alloc(pevent);
 		if (!filter) {
 			log(TERM, LOG_ERR,
-			    "Failed to allocate filter for %s/%s.\n", group, event);
+			    "Failed to allocate filter for %s/%s.\n",
+			    group, event);
 			free(page);
 			return -EINVAL;
 		}
@@ -900,7 +936,8 @@ static int add_event_handler(struct ras_events *ras, struct tep_handle *pevent,
 		if (rc < 0) {
 			tep_filter_strerror(filter, rc, error, sizeof(error));
 			log(TERM, LOG_ERR,
-			    "Failed to install filter for %s/%s: %s\n", group, event, error);
+			    "Failed to install filter for %s/%s: %s\n",
+			    group, event, error);
 			tep_filter_free(filter);
 			free(page);
 			return rc;
@@ -942,6 +979,9 @@ int handle_ras_events(int record_events, int enable_ipmitool)
 	struct ras_events *ras = NULL;
 #ifdef HAVE_DEVLINK
 	char *filter_str = NULL;
+#endif
+#ifdef HAVE_SIGNAL
+	char signal_filter[64];
 #endif
 
 	ras = calloc(1, sizeof(*ras));
@@ -1024,7 +1064,7 @@ int handle_ras_events(int record_events, int enable_ipmitool)
 	cpus = get_num_cpus(ras);
 
 #ifdef HAVE_CPU_FAULT_ISOLATION
-	ras_cpu_isolation_init(cpus);
+	ras_cpu_isolation_init(sysconf(_SC_NPROCESSORS_CONF));
 #endif
 
 #ifdef HAVE_MCE
@@ -1171,6 +1211,30 @@ int handle_ras_events(int record_events, int enable_ipmitool)
 	else if (rc != EVENT_DISABLED)
 		log(ALL, LOG_ERR, "Can't get traces from %s:%s\n",
 		    "cxl", "memory_module");
+
+	rc = add_event_handler(ras, pevent, page_size, "cxl", "cxl_memory_sparing",
+			       ras_cxl_memory_sparing_event_handler, NULL, CXL_MEMORY_SPARING_EVENT);
+	if (!rc)
+		num_events++;
+	else if (rc != EVENT_DISABLED)
+		log(ALL, LOG_ERR, "Can't get traces from %s:%s\n",
+		    "cxl", "cxl_memory_sparing");
+#endif
+
+#ifdef HAVE_SIGNAL
+	snprintf(signal_filter, sizeof(signal_filter), "sig == %d && code >= %d", SIGBUS, BUS_OBJERR);
+	// ensure filter enabled
+	usleep(30000);
+	rc = filter_ras_mc_event(ras, "signal", "signal_generate", signal_filter);
+	if (!rc) {
+		rc = add_event_handler(ras, pevent, page_size, "signal", "signal_generate",
+				       ras_signal_event_handler, NULL, SIGNAL_EVENT);
+		if (!rc)
+			num_events++;
+		else if (rc != -EINVAL)
+			log(ALL, LOG_ERR, "Can't get traces from %s:%s\n",
+			    "signal", "signal_generate");
+	}
 #endif
 
 	if (!num_events) {

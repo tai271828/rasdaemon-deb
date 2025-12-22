@@ -31,6 +31,9 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #define HAVE_DLFCN_H 1
 
+/* "have ERST" */
+#define HAVE_ERST 1
+
 /* "have EXTLOG events collect" */
 #define HAVE_EXTLOG 1
 
@@ -60,6 +63,12 @@
 
 /* "have OpenBMC unified SEL" */
 #define HAVE_OPENBMC_UNIFIED_SEL 1
+
+/* "have poison page statistics" */
+#define HAVE_POISON_PAGE_STAT 1
+
+/* "have signal event" */
+#define HAVE_SIGNAL 1
 
 /* "have sqlite3" */
 #define HAVE_SQLITE3 1
@@ -131,7 +140,7 @@
 #define PACKAGE_NAME "RASdaemon"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "RASdaemon 0.8.3"
+#define PACKAGE_STRING "RASdaemon 0.8.4"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "rasdaemon"
@@ -140,7 +149,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.8.3"
+#define PACKAGE_VERSION "0.8.4"
 
 /* rasdaemon db store state dir */
 #define RASSTATEDIR "/usr/local/var/lib/rasdaemon"
@@ -154,4 +163,4 @@
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "0.8.3"
+#define VERSION "0.8.4"

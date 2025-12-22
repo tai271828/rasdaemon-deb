@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 #include "ras-report.h"
+#include "ras-record.h"
 
 static int setup_report_socket(void)
 {
@@ -372,6 +373,7 @@ static int set_cxl_poison_event_backtrace(char *buf, struct ras_cxl_poison_event
 		"region=%s\n"
 		"region_uuid=%s\n"
 		"hpa=0x%lx\n"
+		"hpa_alias0=0x%lx\n"
 		"dpa=0x%lx\n"
 		"dpa_length=0x%x\n"
 		"source=%s\n"
@@ -385,6 +387,7 @@ static int set_cxl_poison_event_backtrace(char *buf, struct ras_cxl_poison_event
 		ev->region,
 		ev->uuid,
 		ev->hpa,
+		ev->hpa_alias0,
 		ev->dpa,
 		ev->dpa_length,
 		ev->source,
@@ -508,7 +511,9 @@ static int set_cxl_generic_event_backtrace(char *buf, struct ras_cxl_generic_eve
 		"hdr_timestamp=%s\n"
 		"hdr_length=%u\n"
 		"hdr_maint_op_class=%u\n"
-		"hdr_maint_op_sub_class=%u\n",
+		"hdr_maint_op_sub_class=%u\n"
+		"hdr_ld_id=0x%x\n"
+		"hdr_head_id=0x%x\n",
 		ev->hdr.timestamp,
 		ev->hdr.memdev,
 		ev->hdr.host,
@@ -521,7 +526,9 @@ static int set_cxl_generic_event_backtrace(char *buf, struct ras_cxl_generic_eve
 		ev->hdr.hdr_timestamp,
 		ev->hdr.hdr_length,
 		ev->hdr.hdr_maint_op_class,
-		ev->hdr.hdr_maint_op_sub_class);
+		ev->hdr.hdr_maint_op_sub_class,
+		ev->hdr.hdr_ld_id,
+		ev->hdr.hdr_head_id);
 
 	return 0;
 }
@@ -551,6 +558,9 @@ static int set_cxl_general_media_event_backtrace(char *buf, struct ras_cxl_gener
 		"hdr_timestamp=%s\n"
 		"hdr_length=%u\n"
 		"hdr_maint_op_class=%u\n"
+		"hdr_maint_op_sub_class=%u\n"
+		"hdr_ld_id=0x%x\n"
+		"hdr_head_id=0x%x\n"
 		"dpa=0x%lx\n"
 		"dpa_flags=%u\n"
 		"descriptor=%u\n"
@@ -558,6 +568,7 @@ static int set_cxl_general_media_event_backtrace(char *buf, struct ras_cxl_gener
 		"sub_type=0x%x\n"
 		"transaction_type=%u\n"
 		"hpa=0x%lx\n"
+		"hpa_alias0=0x%lx\n"
 		"region=%s\n"
 		"region_uuid=%s\n"
 		"channel=%u\n"
@@ -577,6 +588,9 @@ static int set_cxl_general_media_event_backtrace(char *buf, struct ras_cxl_gener
 		ev->hdr.hdr_timestamp,
 		ev->hdr.hdr_length,
 		ev->hdr.hdr_maint_op_class,
+		ev->hdr.hdr_maint_op_sub_class,
+		ev->hdr.hdr_ld_id,
+		ev->hdr.hdr_head_id,
 		ev->dpa,
 		ev->dpa_flags,
 		ev->descriptor,
@@ -584,6 +598,7 @@ static int set_cxl_general_media_event_backtrace(char *buf, struct ras_cxl_gener
 		ev->sub_type,
 		ev->transaction_type,
 		ev->hpa,
+		ev->hpa_alias0,
 		ev->region,
 		ev->region_uuid,
 		ev->channel,
@@ -620,6 +635,9 @@ static int set_cxl_dram_event_backtrace(char *buf, struct ras_cxl_dram_event *ev
 		"hdr_timestamp=%s\n"
 		"hdr_length=%u\n"
 		"hdr_maint_op_class=%u\n"
+		"hdr_maint_op_sub_class=%u\n"
+		"hdr_ld_id=0x%x\n"
+		"hdr_head_id=0x%x\n"
 		"dpa=0x%lx\n"
 		"dpa_flags=%u\n"
 		"descriptor=%u\n"
@@ -627,6 +645,7 @@ static int set_cxl_dram_event_backtrace(char *buf, struct ras_cxl_dram_event *ev
 		"sub_type=0x%x\n"
 		"transaction_type=%u\n"
 		"hpa=0x%lx\n"
+		"hpa_alias0=0x%lx\n"
 		"region=%s\n"
 		"region_uuid=%s\n"
 		"channel=%u\n"
@@ -651,6 +670,9 @@ static int set_cxl_dram_event_backtrace(char *buf, struct ras_cxl_dram_event *ev
 		ev->hdr.hdr_timestamp,
 		ev->hdr.hdr_length,
 		ev->hdr.hdr_maint_op_class,
+		ev->hdr.hdr_maint_op_sub_class,
+		ev->hdr.hdr_ld_id,
+		ev->hdr.hdr_head_id,
 		ev->dpa,
 		ev->dpa_flags,
 		ev->descriptor,
@@ -658,6 +680,7 @@ static int set_cxl_dram_event_backtrace(char *buf, struct ras_cxl_dram_event *ev
 		ev->sub_type,
 		ev->transaction_type,
 		ev->hpa,
+		ev->hpa_alias0,
 		ev->region,
 		ev->region_uuid,
 		ev->channel,
@@ -699,6 +722,9 @@ static int set_cxl_memory_module_event_backtrace(char *buf, struct ras_cxl_memor
 		"hdr_timestamp=%s\n"
 		"hdr_length=%u\n"
 		"hdr_maint_op_class=%u\n"
+		"hdr_maint_op_sub_class=%u\n"
+		"hdr_ld_id=0x%x\n"
+		"hdr_head_id=0x%x\n"
 		"event_type=%u\n"
 		"event_sub_type=0x%x\n"
 		"health_status=%u\n"
@@ -721,6 +747,9 @@ static int set_cxl_memory_module_event_backtrace(char *buf, struct ras_cxl_memor
 		ev->hdr.hdr_timestamp,
 		ev->hdr.hdr_length,
 		ev->hdr.hdr_maint_op_class,
+		ev->hdr.hdr_maint_op_sub_class,
+		ev->hdr.hdr_ld_id,
+		ev->hdr.hdr_head_id,
 		ev->event_type,
 		ev->event_sub_type,
 		ev->health_status,
@@ -731,6 +760,37 @@ static int set_cxl_memory_module_event_backtrace(char *buf, struct ras_cxl_memor
 		ev->cor_per_err_cnt,
 		ev->device_temp,
 		ev->add_status);
+
+	return 0;
+}
+
+static int set_signal_event_backtrace(char *buf, struct ras_signal_event *ev)
+{
+	unsigned int size = MAX_BACKTRACE_SIZE;
+
+	if (!buf || !ev)
+		return -1;
+
+	while (*buf && size > 0) {
+		buf++;
+		size--;
+	}
+
+	snprintf(buf, size, "BACKTRACE="
+		"timestamp=%s\n"
+		"signal=%d\n"
+		"errorno=%d\n"
+		"code=%d\n"
+		"comm=%s\n"
+		"grp=%d\n"
+		"res=%d\n",
+		ev->timestamp,
+		ev->sig,
+		ev->error_no,
+		ev->code,
+		ev->comm,
+		ev->group,
+		ev->result);
 
 	return 0;
 }
@@ -811,6 +871,10 @@ static int commit_report_backtrace(int sockfd, int type, void *ev)
 	case CXL_MEMORY_MODULE_EVENT:
 		rc = set_cxl_memory_module_event_backtrace(buf,
 							   (struct ras_cxl_memory_module_event *)ev);
+		break;
+	case SIGNAL_EVENT:
+		rc = set_signal_event_backtrace(buf,
+						(struct ras_signal_event *)ev);
 		break;
 	default:
 		return -1;
@@ -1543,6 +1607,52 @@ int ras_report_cxl_memory_module_event(struct ras_events *ras,
 	done = 1;
 
 cxl_memory_module_fail:
+
+	if (sockfd >= 0)
+		close(sockfd);
+
+	if (done)
+		return 0;
+
+	return -1;
+}
+
+int ras_report_signal_event(struct ras_events *ras,
+			    struct ras_signal_event *ev)
+{
+	char buf[MAX_MESSAGE_SIZE];
+	int sockfd = 0;
+	int done = 0;
+	int rc = -1;
+
+	memset(buf, 0, sizeof(buf));
+
+	sockfd = setup_report_socket();
+	if (sockfd < 0)
+		return -1;
+
+	rc = commit_report_basic(sockfd);
+	if (rc < 0)
+		goto signal_fail;
+
+	rc = commit_report_backtrace(sockfd, SIGNAL_EVENT, ev);
+	if (rc < 0)
+		goto signal_fail;
+
+	snprintf(buf, MAX_MESSAGE_SIZE, "ANALYZER=%s",
+		 "rasdaemon-signal_event");
+	rc = write(sockfd, buf, strlen(buf) + 1);
+	if (rc < strlen(buf) + 1)
+		goto signal_fail;
+
+	snprintf(buf, MAX_MESSAGE_SIZE, "REASON=%s", "SIGBUS for Hardware error");
+	rc = write(sockfd, buf, strlen(buf) + 1);
+	if (rc < strlen(buf) + 1)
+		goto signal_fail;
+
+	done = 1;
+
+signal_fail:
 
 	if (sockfd >= 0)
 		close(sockfd);
