@@ -6,6 +6,7 @@ Uploaders: Russell Coker <russell@coker.com.au>
 Build-Depends: debhelper (>= 12), quilt, dh-exec,
                autoconf,
                pkg-config,
+               libpci-dev,
                libsqlite3-dev, libgettextpo-dev,
                libtraceevent-dev (>= 1)
 Standards-Version: 4.5.0
